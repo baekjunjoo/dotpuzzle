@@ -8,370 +8,451 @@
   <link rel="stylesheet" as="style" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
   <style>
     :root {
-      --bg: #0c0d10;
-      --bg-soft: #14161a;
-      --line: #1c1f26;
-      --line-soft: #1f232b;
-      --fg: #ecedef;
-      --fg-soft: #aeb4bd;
-      --fg-dim: #6c7380;
-      --fg-faint: #3d434d;
-      --accent: #e8c573;
-      --accent-soft: #b89758;
-      --danger: #d97c5c;
-      --ok: #6ea96f;
-      --info: #6c9bd1;
+      /* Heap-inspired light palette */
+      --bg-app: #fafafa;
+      --bg-card: #ffffff;
+      --bg-soft: #f3f3f1;
+      --line: #e8e8e6;
+      --line-soft: #f0f0ee;
+      --fg: #0a0a0a;
+      --fg-soft: #4a4a4a;
+      --fg-dim: #8a8a8a;
+      --fg-faint: #c5c5c3;
+      --dot: #0a0a0a;
+      /* Game accents */
+      --c-sudoku: #7fb2e8;
+      --c-sudoku-soft: #d4e7f9;
+      --c-mine: #f5b5bd;
+      --c-mine-soft: #fde0e3;
+      --c-nono: #f5c957;
+      --c-nono-soft: #fdf0c8;
+      --c-maze: #67b87b;
+      --c-maze-soft: #d4ecd9;
+      --accent: var(--c-sudoku);
+      /* status */
+      --ok: #3a8d4f;
+      --danger: #d04848;
+      --info: #4a8fcf;
     }
     * { box-sizing: border-box; }
     html, body {
       margin: 0; padding: 0;
-      background: #050609;
+      background: #eaeaea;
       color: var(--fg);
       font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
       min-height: 100vh;
       display: flex; justify-content: center; align-items: center;
       padding: 24px 12px;
+      -webkit-font-smoothing: antialiased;
     }
-    /* iPhone 프레임 */
+    /* iPhone frame */
     .iphone {
       width: 380px; max-width: 100%;
       height: 820px; max-height: 95vh;
-      background: var(--bg);
+      background: var(--bg-app);
       border-radius: 44px;
-      border: 14px solid #1a1c20;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.05);
-      overflow: hidden;
-      position: relative;
+      border: 12px solid #1a1c20;
+      box-shadow: 0 30px 80px rgba(0,0,0,0.18), 0 0 0 1px rgba(0,0,0,0.04);
+      overflow: hidden; position: relative;
       transform: translateZ(0);
     }
     .notch {
-      position: absolute; top: 14px; left: 50%; transform: translateX(-50%);
+      position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
       width: 110px; height: 28px; background: #0a0b0e;
       border-radius: 0 0 18px 18px; z-index: 100;
     }
     .app {
       width: 100%; height: 100%;
       display: flex; flex-direction: column;
-      padding: 50px 18px 18px;
-      overflow-y: auto;
-      overflow-x: hidden;
+      padding: 50px 20px 22px;
+      overflow-y: auto; overflow-x: hidden;
+      background: var(--bg-app);
     }
-    /* Header */
+    /* Themed game screens — different accent per game */
+    .app[data-theme="sudoku"] { --accent: var(--c-sudoku); --accent-soft: var(--c-sudoku-soft); }
+    .app[data-theme="minesweeper"] { --accent: var(--c-mine); --accent-soft: var(--c-mine-soft); }
+    .app[data-theme="nonogram"] { --accent: var(--c-nono); --accent-soft: var(--c-nono-soft); }
+    .app[data-theme="maze"] { --accent: var(--c-maze); --accent-soft: var(--c-maze-soft); }
+
+    /* Top bar */
     .topbar {
       display: flex; justify-content: space-between; align-items: center;
-      margin-bottom: 14px;
-      gap: 8px;
+      margin-bottom: 16px; gap: 8px;
     }
     .brand {
-      font-size: 11px; letter-spacing: 0.15em; color: var(--fg-dim);
+      font-size: 11px; letter-spacing: 0.18em; color: var(--fg-dim);
       font-weight: 700;
     }
-    .brand b { color: var(--accent); }
-    .header-btns { display: flex; gap: 6px; }
+    .brand b { color: var(--fg); }
+    .header-btns { display: flex; gap: 6px; align-items: center; }
     .icon-btn {
-      background: transparent; border: 1px solid var(--fg-faint);
-      color: var(--fg-soft); font-size: 11px; padding: 5px 9px;
-      cursor: pointer; font-family: inherit; letter-spacing: 0.05em;
+      background: var(--bg-card); border: 1px solid var(--line);
+      color: var(--fg-soft); font-size: 10px; padding: 6px 11px;
+      cursor: pointer; font-family: inherit; letter-spacing: 0.08em;
+      border-radius: 999px; font-weight: 600;
       transition: all 0.15s;
     }
-    .icon-btn:hover { border-color: var(--fg-dim); color: var(--fg); }
-    .icon-btn.active { border-color: var(--accent); color: var(--accent); }
-    .icon-btn.connected { border-color: var(--ok); color: var(--ok); }
+    .icon-btn:hover { border-color: var(--fg-faint); color: var(--fg); }
+    .icon-btn.active { background: var(--fg); color: white; border-color: var(--fg); }
+    .icon-btn.connected { background: var(--ok); color: white; border-color: var(--ok); }
+    .back-btn {
+      background: var(--bg-card); border: 1px solid var(--line);
+      color: var(--fg); font-size: 14px; padding: 6px 10px;
+      cursor: pointer; font-family: inherit;
+      border-radius: 999px; line-height: 1;
+    }
+    .back-btn:hover { background: var(--bg-soft); }
 
     /* Launcher */
+    .launcher-hero {
+      background: var(--c-sudoku-soft);
+      border-radius: 28px;
+      padding: 24px 22px;
+      margin-bottom: 18px;
+      position: relative; overflow: hidden;
+    }
+    .launcher-hero-dots {
+      position: absolute; right: -30px; bottom: -30px;
+      width: 180px; height: 90px;
+    }
+    .launcher-hero-dots svg { width: 100%; height: 100%; }
+    .launcher-eyebrow {
+      font-size: 10px; letter-spacing: 0.18em; color: var(--fg-soft);
+      font-weight: 700; margin-bottom: 8px;
+    }
     .launcher-title {
-      font-size: 24px; font-weight: 800; letter-spacing: -0.02em;
-      margin: 8px 0 4px;
+      font-size: 26px; font-weight: 800; letter-spacing: -0.02em;
+      line-height: 1.15; color: var(--fg);
+      margin: 0 0 8px;
     }
-    .launcher-title b { color: var(--accent); }
     .launcher-sub {
-      font-size: 12px; color: var(--fg-dim); margin-bottom: 18px;
-      line-height: 1.5;
+      font-size: 13px; color: var(--fg-soft); line-height: 1.5;
+      max-width: 75%;
     }
+    .launcher-section-label {
+      font-size: 10px; letter-spacing: 0.18em; color: var(--fg-dim);
+      font-weight: 700; margin: 10px 4px 10px;
+    }
+
+    /* Game card — Heap-style with colored swatch + check */
     .game-card {
-      background: var(--bg-soft); border: 1.5px solid var(--line);
-      padding: 14px 16px; margin-bottom: 10px;
+      width: 100%;
+      background: var(--bg-card); border: 1px solid var(--line);
+      padding: 16px; margin-bottom: 10px;
       cursor: pointer; transition: all 0.15s;
       text-align: left;
+      border-radius: 20px;
+      display: flex; gap: 14px; align-items: center;
+      font-family: inherit;
     }
-    .game-card:hover { border-color: var(--accent); }
-    .game-card.dotpad-focus { border-color: var(--accent); outline: 3px solid var(--accent); outline-offset: 2px; }
+    .game-card:hover { border-color: var(--fg-faint); transform: translateY(-1px); box-shadow: 0 6px 20px rgba(0,0,0,0.04); }
+    .game-card.dotpad-focus { border-color: var(--dot); box-shadow: 0 0 0 3px rgba(0,0,0,0.08); }
+    .game-card-swatch {
+      width: 56px; height: 56px; flex-shrink: 0;
+      border-radius: 16px;
+      display: flex; justify-content: center; align-items: center;
+    }
+    .swatch-sudoku { background: var(--c-sudoku-soft); }
+    .swatch-mine { background: var(--c-mine-soft); }
+    .swatch-nono { background: var(--c-nono-soft); }
+    .swatch-maze { background: var(--c-maze-soft); }
+    .swatch-dot { width: 22px; height: 22px; border-radius: 50%; background: var(--dot); position: relative; }
+    .swatch-dot::before, .swatch-dot::after {
+      content: ''; position: absolute; width: 10px; height: 10px; border-radius: 50%; background: var(--dot);
+    }
+    .swatch-dot.cluster::before { left: -14px; top: 6px; }
+    .swatch-dot.cluster::after { right: -14px; top: 6px; }
+    .game-card-body { flex: 1; min-width: 0; }
     .game-card-title {
       font-size: 15px; font-weight: 700; color: var(--fg);
       margin-bottom: 4px;
+      letter-spacing: -0.01em;
     }
     .game-card-sub {
-      font-size: 11px; color: var(--fg-dim); line-height: 1.4;
+      font-size: 12px; color: var(--fg-dim); line-height: 1.45;
     }
-    .game-card-icon {
-      display: inline-block; width: 32px; height: 32px;
-      border: 2px solid var(--accent); margin-bottom: 8px;
-      position: relative;
-    }
-    .game-card-icon.sudoku::before, .game-card-icon.sudoku::after {
-      content: ''; position: absolute; background: var(--accent);
-    }
-    .game-card-icon.sudoku::before { left: 33%; top: 0; bottom: 0; width: 1px; }
-    .game-card-icon.sudoku::after { right: 33%; top: 0; bottom: 0; width: 1px; }
-    .game-card-icon.mine { background: var(--accent); }
-    .game-card-icon.mine::before {
-      content: ''; position: absolute; left: 50%; top: 50%;
-      transform: translate(-50%, -50%); width: 4px; height: 4px;
-      background: var(--bg); border-radius: 50%;
-    }
-    .game-card-icon.nono {
-      background-image: linear-gradient(90deg, transparent 45%, var(--accent) 45%, var(--accent) 55%, transparent 55%),
-                        linear-gradient(0deg, transparent 45%, var(--accent) 45%, var(--accent) 55%, transparent 55%);
-    }
-    .game-card-icon.maze::before {
-      content: ''; position: absolute; left: 4px; top: 4px;
-      width: 8px; height: 8px; border: 2px solid var(--accent);
-      box-shadow: 12px 0 0 -1px var(--accent), 0 12px 0 -1px var(--accent);
+    .game-card-arrow {
+      width: 28px; height: 28px; border-radius: 50%;
+      background: var(--bg-soft); color: var(--fg);
+      display: flex; justify-content: center; align-items: center;
+      font-size: 14px; flex-shrink: 0;
     }
 
     /* Game header */
     .game-head {
+      background: var(--accent-soft);
+      border-radius: 22px;
+      padding: 14px 16px 12px;
+      margin-bottom: 14px;
+      position: relative; overflow: hidden;
+    }
+    .game-head-row {
       display: flex; justify-content: space-between; align-items: center;
-      margin-bottom: 10px;
+      margin-bottom: 6px;
+    }
+    .game-eyebrow {
+      font-size: 10px; letter-spacing: 0.15em; color: var(--fg-soft);
+      font-weight: 700;
     }
     .game-title {
-      font-size: 16px; font-weight: 800; color: var(--accent);
-      letter-spacing: 0.05em;
+      font-size: 19px; font-weight: 800; color: var(--fg);
+      letter-spacing: -0.01em; line-height: 1.2;
     }
     .game-sub {
-      font-size: 11px; color: var(--fg-dim);
-      margin-bottom: 12px;
+      font-size: 12px; color: var(--fg-soft);
+      line-height: 1.45;
     }
-    .back-btn {
-      background: transparent; border: 1px solid var(--fg-faint);
-      color: var(--fg-soft); font-size: 11px; padding: 4px 9px;
-      cursor: pointer; font-family: inherit;
-    }
-    .back-btn:hover { color: var(--fg); border-color: var(--fg-dim); }
 
     /* Sudoku */
     .sudoku-grid {
       display: grid; grid-template-columns: repeat(9, 1fr);
       gap: 1px; background: var(--fg-faint);
-      border: 2px solid var(--fg-soft);
-      margin-bottom: 12px;
+      border: 2px solid var(--fg);
+      margin-bottom: 14px;
       aspect-ratio: 1;
+      border-radius: 8px; overflow: hidden;
     }
     .sudoku-cell {
-      background: var(--bg);
+      background: var(--bg-card);
       display: flex; justify-content: center; align-items: center;
-      font-size: 14px; font-weight: 600;
+      font-size: 14px; font-weight: 700; color: var(--fg);
       cursor: pointer; user-select: none;
       position: relative;
     }
-    .sudoku-cell.given { color: var(--fg); background: var(--line-soft); }
-    .sudoku-cell.user { color: var(--accent); }
+    .sudoku-cell.given { color: var(--fg); background: var(--bg-soft); }
+    .sudoku-cell.user { color: var(--info); }
     .sudoku-cell.bad { color: var(--danger); }
-    .sudoku-cell.focused { outline: 2px solid var(--accent); outline-offset: -2px; z-index: 2; }
-    .sudoku-cell:nth-child(3n) { border-right: 1px solid var(--fg-soft); }
-    .sudoku-row:nth-child(3n) { border-bottom: 1px solid var(--fg-soft); }
-    /* Box divider via background colors */
-    .sudoku-grid {
-      grid-template-columns: repeat(3, 1fr 1fr 1fr);
+    .sudoku-cell.focused { background: var(--accent); color: var(--fg); z-index: 2; }
+    /* 3x3 box dividers via thick borders */
+    .sudoku-grid > .sudoku-cell:nth-child(3n) { border-right: 2px solid var(--fg); }
+    .sudoku-grid > .sudoku-cell:nth-child(9n) { border-right: none; }
+    .sudoku-grid > .sudoku-cell:nth-child(n+19):nth-child(-n+27),
+    .sudoku-grid > .sudoku-cell:nth-child(n+46):nth-child(-n+54) {
+      border-bottom: 2px solid var(--fg);
     }
+
+    /* iOS-style number pad */
     .num-pad {
-      display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px;
-      margin-bottom: 10px;
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
+      margin-bottom: 12px;
+      max-width: 280px;
     }
     .num-btn {
-      background: var(--bg-soft); border: 1px solid var(--line);
-      color: var(--fg); padding: 10px 0; font-size: 14px; font-weight: 700;
+      background: var(--bg-card); border: 1px solid var(--line);
+      color: var(--fg); padding: 14px 0;
+      font-size: 19px; font-weight: 600;
       cursor: pointer; font-family: inherit;
+      border-radius: 16px;
+      display: flex; flex-direction: column; justify-content: center; align-items: center;
+      gap: 1px; transition: all 0.1s;
     }
-    .num-btn:hover { border-color: var(--accent); color: var(--accent); }
-    .num-btn.dotpad-focus { outline: 3px solid var(--accent); outline-offset: 2px; }
+    .num-btn:hover { background: var(--bg-soft); border-color: var(--fg-faint); }
+    .num-btn:active { transform: scale(0.97); background: var(--accent-soft); }
+    .num-btn .sub {
+      font-size: 8px; letter-spacing: 0.15em; color: var(--fg-dim);
+      font-weight: 600;
+    }
+    .num-btn.dotpad-focus { background: var(--accent); border-color: var(--dot); }
+    .num-btn.erase { background: var(--bg-soft); }
+    .num-row { display: flex; gap: 8px; }
+    .num-row > * { flex: 1; }
+
+    /* Cancel/Done pill bar */
+    .pad-bar {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 6px 0 12px;
+      font-size: 14px; font-weight: 600;
+    }
+    .pad-bar .cancel { color: var(--info); cursor: pointer; }
+    .pad-bar .done { color: var(--info); cursor: pointer; }
 
     /* Minesweeper */
     .ms-grid {
       display: grid; gap: 1px; background: var(--fg-faint);
-      border: 2px solid var(--fg-soft);
+      border: 2px solid var(--fg);
       margin-bottom: 12px;
       aspect-ratio: 1;
+      border-radius: 8px; overflow: hidden;
     }
     .ms-cell {
-      background: var(--line-soft);
+      background: var(--bg-soft);
       display: flex; justify-content: center; align-items: center;
-      font-size: 11px; font-weight: 700;
+      font-size: 11px; font-weight: 700; color: var(--fg);
       cursor: pointer; user-select: none;
     }
-    .ms-cell.revealed { background: var(--bg); color: var(--fg-soft); }
+    .ms-cell.revealed { background: var(--bg-card); color: var(--fg-soft); }
     .ms-cell.revealed.n1 { color: var(--info); }
     .ms-cell.revealed.n2 { color: var(--ok); }
     .ms-cell.revealed.n3 { color: var(--danger); }
-    .ms-cell.revealed.n4 { color: #b88ed6; }
-    .ms-cell.flagged::after { content: '⚑'; color: var(--accent); }
-    .ms-cell.mine::after { content: '✱'; color: var(--danger); }
-    .ms-cell.focused { outline: 2px solid var(--accent); outline-offset: -2px; z-index: 2; }
+    .ms-cell.revealed.n4 { color: #8a4fb5; }
+    .ms-cell.flagged { background: var(--c-mine-soft); }
+    .ms-cell.flagged::after { content: '⚑'; color: var(--danger); font-size: 12px; }
+    .ms-cell.mine { background: var(--c-mine); }
+    .ms-cell.mine::after { content: '●'; color: var(--dot); }
+    .ms-cell.focused { background: var(--accent); color: var(--fg); z-index: 2; }
     .ms-status {
-      display: flex; justify-content: space-between;
-      font-size: 11px; color: var(--fg-dim); margin-bottom: 8px;
+      display: flex; justify-content: space-around;
+      font-size: 11px; color: var(--fg-soft); margin-bottom: 8px;
+      background: var(--bg-card); border: 1px solid var(--line);
+      border-radius: 14px; padding: 8px 10px;
     }
-    .ms-status b { color: var(--accent); }
+    .ms-status b { color: var(--fg); font-weight: 700; }
 
     /* Nonogram */
     .nono-wrap {
       display: grid; gap: 1px;
-      grid-template-columns: 80px 1fr;
       margin-bottom: 12px;
-    }
-    .nono-col-hints {
-      grid-column: 2;
-      display: grid; gap: 1px; background: var(--bg);
-    }
-    .nono-row-hints {
-      grid-column: 1; grid-row: 2;
-      display: grid; gap: 1px;
-    }
-    .nono-grid-area {
-      grid-column: 2; grid-row: 2;
-      display: grid; gap: 1px; background: var(--fg-faint);
-      border: 2px solid var(--fg-soft);
     }
     .nono-hint-cell {
       background: var(--bg-soft); padding: 2px 4px;
       font-size: 9px; color: var(--fg-soft);
       display: flex; align-items: center; line-height: 1.1;
-      letter-spacing: 0;
+      letter-spacing: 0; font-weight: 600;
     }
     .nono-hint-cell.col { flex-direction: column; justify-content: flex-end; text-align: center; }
     .nono-hint-cell.row { justify-content: flex-end; }
+    .nono-grid-area {
+      background: var(--fg-faint); border: 2px solid var(--fg);
+      border-radius: 4px; overflow: hidden;
+    }
     .nono-cell {
-      background: var(--bg); cursor: pointer; user-select: none;
+      background: var(--bg-card); cursor: pointer; user-select: none;
       display: flex; justify-content: center; align-items: center;
       font-size: 10px; color: var(--fg-dim);
     }
-    .nono-cell.filled { background: var(--accent); }
-    .nono-cell.x::after { content: '×'; color: var(--fg-faint); font-size: 12px; }
-    .nono-cell.focused { outline: 2px solid var(--accent); outline-offset: -2px; z-index: 2; }
+    .nono-cell.filled { background: var(--dot); }
+    .nono-cell.x::after { content: '×'; color: var(--fg-dim); font-size: 12px; }
+    .nono-cell.focused { box-shadow: inset 0 0 0 2px var(--c-nono); z-index: 2; }
 
     /* Maze */
     .maze-grid {
       display: grid; gap: 0;
       margin-bottom: 12px;
       aspect-ratio: 1;
-      border: 2px solid var(--fg-soft);
-      background: var(--bg);
+      border: 2px solid var(--fg);
+      border-radius: 8px; overflow: hidden;
+      background: var(--bg-card);
     }
     .maze-cell {
-      background: var(--bg); position: relative;
+      background: var(--bg-card); position: relative;
     }
-    .maze-cell.wall { background: var(--fg-faint); }
+    .maze-cell.wall { background: var(--fg); }
     .maze-cell.player::after {
-      content: ''; position: absolute; inset: 18%;
-      background: var(--accent); border-radius: 50%;
+      content: ''; position: absolute; inset: 12%;
+      background: var(--c-maze); border-radius: 50%;
+      box-shadow: 0 0 0 2px var(--fg);
     }
     .maze-cell.goal::after {
       content: ''; position: absolute; inset: 25%;
-      background: var(--ok); transform: rotate(45deg);
+      background: var(--accent); border-radius: 50%;
     }
-    .maze-cell.focused { outline: 2px solid var(--accent); outline-offset: -2px; z-index: 2; }
     .maze-controls {
       display: grid; grid-template-columns: repeat(3, 1fr);
-      gap: 4px; margin: 0 auto; width: 180px;
+      gap: 6px; margin: 0 auto; width: 200px;
     }
-    .maze-controls .num-btn { padding: 12px 0; }
+    .maze-controls .num-btn { padding: 14px 0; font-size: 16px; }
     .maze-controls .empty { background: transparent; border: none; }
 
-    /* Action bar (shared bottom) */
+    /* Action buttons */
     .action-bar {
-      display: flex; gap: 6px; flex-wrap: wrap;
-      margin-top: 8px;
+      display: flex; gap: 8px; flex-wrap: wrap;
+      margin-top: 12px;
     }
     .primary-btn {
-      background: var(--accent); color: var(--bg); border: none;
-      padding: 10px 16px; font-size: 13px; font-weight: 700;
-      cursor: pointer; font-family: inherit; letter-spacing: 0.03em;
-      flex: 1; min-width: 120px;
+      background: var(--fg); color: white; border: none;
+      padding: 14px 22px; font-size: 14px; font-weight: 700;
+      cursor: pointer; font-family: inherit; letter-spacing: 0.02em;
+      flex: 1; min-width: 130px;
+      border-radius: 999px;
+      transition: all 0.15s;
     }
-    .primary-btn:hover { background: var(--accent-soft); }
-    .primary-btn.dotpad-focus { outline: 3px solid var(--accent); outline-offset: 2px; }
+    .primary-btn:hover { background: #2a2a2a; transform: translateY(-1px); }
+    .primary-btn.dotpad-focus { box-shadow: 0 0 0 3px var(--accent); }
     .ghost-btn {
-      background: transparent; color: var(--fg-soft);
-      border: 1px solid var(--fg-faint);
-      padding: 10px 14px; font-size: 12px;
-      cursor: pointer; font-family: inherit; letter-spacing: 0.03em;
+      background: var(--bg-card); color: var(--fg);
+      border: 1px solid var(--line);
+      padding: 14px 22px; font-size: 13px; font-weight: 600;
+      cursor: pointer; font-family: inherit;
+      border-radius: 999px;
+      transition: all 0.15s;
     }
-    .ghost-btn:hover { color: var(--fg); border-color: var(--fg-dim); }
-    .ghost-btn.dotpad-focus { outline: 3px solid var(--accent); outline-offset: 2px; }
+    .ghost-btn:hover { background: var(--bg-soft); border-color: var(--fg-faint); }
+    .ghost-btn.dotpad-focus { border-color: var(--dot); }
 
-    /* Status banner */
-    .banner {
-      background: var(--line-soft); border-left: 3px solid var(--accent);
-      padding: 8px 12px; margin-bottom: 10px;
-      font-size: 11px; color: var(--fg-soft); line-height: 1.5;
-    }
-    .banner.ok { border-color: var(--ok); }
-    .banner.err { border-color: var(--danger); }
-
-    /* Dot Pad popup */
-    .overlay {
-      position: absolute; inset: 0; background: rgba(0,0,0,0.7);
-      display: none; justify-content: center; align-items: center;
-      z-index: 200;
-    }
-    .overlay.active { display: flex; }
-    .modal {
-      background: var(--bg); border: 1px solid var(--fg-faint);
-      padding: 22px; width: 90%; max-width: 320px;
-    }
-    .modal h3 { margin: 0 0 6px; font-size: 14px; color: var(--accent); letter-spacing: 0.05em; }
-    .modal p { font-size: 11px; color: var(--fg-dim); margin: 0 0 14px; line-height: 1.5; }
-    .modal .row { display: flex; gap: 6px; }
-
-    /* Toast hint */
+    /* Toast */
     #toast {
       position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
-      background: var(--accent); color: var(--bg);
-      padding: 8px 16px; font-size: 12px; font-weight: 700;
+      background: var(--fg); color: white;
+      padding: 12px 22px; font-size: 13px; font-weight: 600;
       z-index: 9999; opacity: 0; transition: opacity 0.3s;
-      pointer-events: none; letter-spacing: 0.03em;
+      pointer-events: none; letter-spacing: 0.02em;
+      border-radius: 999px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.2);
     }
     #toast.show { opacity: 1; }
 
-    /* Live preview of Dot Pad */
+    /* Dot Pad popup */
+    .overlay {
+      position: absolute; inset: 0; background: rgba(0,0,0,0.4);
+      display: none; justify-content: center; align-items: center;
+      z-index: 200; backdrop-filter: blur(4px);
+    }
+    .overlay.active { display: flex; }
+    .modal {
+      background: var(--bg-card); border: 1px solid var(--line);
+      padding: 24px; width: 90%; max-width: 320px;
+      border-radius: 28px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.18);
+    }
+    .modal h3 { margin: 0 0 6px; font-size: 16px; color: var(--fg); letter-spacing: -0.01em; font-weight: 800; }
+    .modal p { font-size: 12px; color: var(--fg-dim); margin: 0 0 16px; line-height: 1.5; }
+    .modal .row { display: flex; gap: 8px; }
+
+    /* Dot Pad preview strip */
     .dotpad-preview {
-      background: var(--bg-soft); border: 1px solid var(--line);
-      padding: 10px; margin-top: 10px;
+      background: var(--bg-card); border: 1px solid var(--line);
+      padding: 12px; margin-top: 12px;
+      border-radius: 16px;
     }
     .dotpad-preview-label {
-      font-size: 10px; color: var(--fg-dim); letter-spacing: 0.1em;
-      margin-bottom: 6px;
+      font-size: 9px; color: var(--fg-dim); letter-spacing: 0.18em;
+      font-weight: 700; margin-bottom: 8px;
     }
     .dotpad-preview-grid {
       display: grid; grid-template-columns: repeat(30, 1fr);
       gap: 0; aspect-ratio: 3 / 1;
-      background: #0a0b0e;
+      background: var(--bg-soft);
+      border-radius: 6px; overflow: hidden;
     }
-    .dp-cell {
-      background: var(--bg);
-      border-right: 1px solid #0c0d10;
-      position: relative;
-    }
+    .dp-cell { background: transparent; position: relative; }
     .dp-cell .dot {
-      position: absolute; width: 22%; height: 16%;
+      position: absolute; width: 30%; height: 20%;
       background: var(--fg-faint); border-radius: 50%;
     }
-    .dp-cell .dot.up { background: var(--accent); box-shadow: 0 0 4px var(--accent); }
-    .dp-cell .dot.d1 { left: 22%; top: 12%; }
-    .dp-cell .dot.d2 { left: 22%; top: 44%; }
-    .dp-cell .dot.d3 { left: 22%; top: 72%; }
+    .dp-cell .dot.up { background: var(--dot); }
+    .dp-cell .dot.d1 { left: 20%; top: 12%; }
+    .dp-cell .dot.d2 { left: 20%; top: 44%; }
+    .dp-cell .dot.d3 { left: 20%; top: 72%; }
     .dp-cell .dot.d4 { left: 60%; top: 12%; }
     .dp-cell .dot.d5 { left: 60%; top: 44%; }
     .dp-cell .dot.d6 { left: 60%; top: 72%; }
 
-    /* Hints for what each button does */
+    /* Key hints */
     .key-hints {
-      background: var(--bg-soft); padding: 8px 11px;
-      font-size: 10px; color: var(--fg-dim);
-      letter-spacing: 0.02em; line-height: 1.6;
-      margin-bottom: 10px; border: 1px solid var(--line);
+      background: var(--bg-card); padding: 10px 14px;
+      font-size: 11px; color: var(--fg-soft);
+      letter-spacing: 0; line-height: 1.55;
+      margin-bottom: 12px; border: 1px solid var(--line);
+      border-radius: 14px;
     }
-    .key-hints b { color: var(--accent); }
+    .key-hints b { color: var(--fg); font-weight: 700; }
+
+    /* Footer brand mark (small dot cluster) */
+    .footer-mark {
+      display: flex; justify-content: center; align-items: center;
+      gap: 4px; margin-top: 18px; opacity: 0.4;
+    }
+    .footer-mark .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--dot); }
   </style>
 </head>
 <body>
@@ -462,18 +543,24 @@
   // ============================================================
   // HEADER
   // ============================================================
-  function renderHeader(titleHtml, subText) {
+  function renderHeader(titleHtml, subText, eyebrowText) {
+    const stageNum = { launcher: '', sudoku: '1', minesweeper: '2', nonogram: '3', maze: '4' }[state.screen] || '';
+    const stageLabel = { sudoku: 'Sudoku', minesweeper: 'Minesweeper', nonogram: 'Nonogram', maze: 'Maze' }[state.screen] || '';
     return `
       <div class="topbar">
-        <div class="brand">DOT <b>ARCADE</b></div>
+        ${state.screen !== 'launcher' ? `<button class="back-btn" onclick="goLauncher()" aria-label="Back">←</button>` : `<div class="brand">DOT <b>ARCADE</b></div>`}
+        <div class="game-eyebrow" style="${state.screen==='launcher'?'display:none':''}">${stageLabel} ${stageNum}</div>
         <div class="header-btns">
           <button class="icon-btn ${state.ttsOn?'active':''}" id="tts-btn" onclick="toggleTts()">VOX</button>
-          <button class="icon-btn ${state.dotpadConnected?'connected':''}" id="dp-btn" onclick="openDpOverlay()">${state.dotpadConnected?'● Pad':'Pad'}</button>
-          ${state.screen !== 'launcher' ? `<button class="back-btn" onclick="goLauncher()">◀ Back</button>` : ''}
+          <button class="icon-btn ${state.dotpadConnected?'connected':''}" id="dp-btn" onclick="openDpOverlay()">${state.dotpadConnected?'● PAD':'PAD'}</button>
         </div>
       </div>
-      ${titleHtml ? `<div class="game-head"><div class="game-title">${titleHtml}</div></div>` : ''}
-      ${subText ? `<div class="game-sub">${subText}</div>` : ''}
+      ${titleHtml ? `
+        <div class="game-head">
+          ${eyebrowText ? `<div class="game-eyebrow">${eyebrowText}</div>` : ''}
+          <div class="game-title">${titleHtml}</div>
+          ${subText ? `<div class="game-sub">${subText}</div>` : ''}
+        </div>` : ''}
     `;
   }
 
@@ -493,12 +580,12 @@
   // ROUTER
   // ============================================================
   function render() {
+    document.getElementById('app').setAttribute('data-theme', state.screen);
     if (state.screen === 'launcher') renderLauncher();
     else if (state.screen === 'sudoku') renderSudoku();
     else if (state.screen === 'minesweeper') renderMinesweeper();
     else if (state.screen === 'nonogram') renderNonogram();
     else if (state.screen === 'maze') renderMaze();
-    // Highlight first dotpad item
     setTimeout(() => {
       if (state.dotpadConnected) dotpadHighlight();
       pushToDotpad();
@@ -511,35 +598,61 @@
   function renderLauncher() {
     $('screen').innerHTML = `
       ${renderHeader('', '')}
-      <div class="launcher-title">DOT <b>PUZZLE</b> PACK</div>
-      <div class="launcher-sub">Daily tactile puzzles for Dot Pad.<br/>Grid = perfect tactile mapping.</div>
+      <div class="launcher-hero">
+        <div class="launcher-eyebrow">DOT ARCADE · TRACK A</div>
+        <div class="launcher-title">DotPuzzle<br/>Pack</div>
+        <div class="launcher-sub">Daily tactile puzzles. One grid cell = one Dot Pad cell. Perfect mapping.</div>
+        <svg class="launcher-hero-dots" viewBox="0 0 180 90" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <circle cx="36" cy="60" r="36" fill="#0a0a0a"/>
+          <circle cx="100" cy="60" r="36" fill="#0a0a0a"/>
+          <circle cx="164" cy="60" r="36" fill="#0a0a0a"/>
+        </svg>
+      </div>
+
+      <div class="launcher-section-label">CHOOSE A PUZZLE</div>
 
       <button class="game-card" onclick="startGame('sudoku')">
-        <div class="game-card-icon sudoku"></div>
-        <div class="game-card-title">Sudoku · 9 × 9</div>
-        <div class="game-card-sub">Fill every row, column, and 3×3 box with digits 1 to 9.</div>
+        <div class="game-card-swatch swatch-sudoku"><div class="swatch-dot"></div></div>
+        <div class="game-card-body">
+          <div class="game-card-title">Sudoku</div>
+          <div class="game-card-sub">9 × 9 · Fill rows, columns, and 3×3 boxes with 1-9.</div>
+        </div>
+        <div class="game-card-arrow">→</div>
       </button>
 
       <button class="game-card" onclick="startGame('minesweeper')">
-        <div class="game-card-icon mine"></div>
-        <div class="game-card-title">Minesweeper · 9 × 9</div>
-        <div class="game-card-sub">Reveal safe cells, flag the mines. Numbers count adjacent mines.</div>
+        <div class="game-card-swatch swatch-mine"><div class="swatch-dot"></div></div>
+        <div class="game-card-body">
+          <div class="game-card-title">Minesweeper</div>
+          <div class="game-card-sub">9 × 9 · Reveal safe cells. Numbers count adjacent mines.</div>
+        </div>
+        <div class="game-card-arrow">→</div>
       </button>
 
       <button class="game-card" onclick="startGame('nonogram')">
-        <div class="game-card-icon nono"></div>
-        <div class="game-card-title">Nonogram · 10 × 10</div>
-        <div class="game-card-sub">Use row and column hints to reveal a hidden picture.</div>
+        <div class="game-card-swatch swatch-nono"><div class="swatch-dot"></div></div>
+        <div class="game-card-body">
+          <div class="game-card-title">Nonogram</div>
+          <div class="game-card-sub">10 × 10 · Use row/column hints to reveal the picture.</div>
+        </div>
+        <div class="game-card-arrow">→</div>
       </button>
 
       <button class="game-card" onclick="startGame('maze')">
-        <div class="game-card-icon maze"></div>
-        <div class="game-card-title">Maze · 15 × 15</div>
-        <div class="game-card-sub">Navigate from start to goal. Arrows on screen or F-keys on Pad.</div>
+        <div class="game-card-swatch swatch-maze"><div class="swatch-dot"></div></div>
+        <div class="game-card-body">
+          <div class="game-card-title">Maze</div>
+          <div class="game-card-sub">15 × 15 · Navigate from start to goal. Pan keys steer.</div>
+        </div>
+        <div class="game-card-arrow">→</div>
       </button>
 
       <div class="key-hints" style="margin-top:14px">
-        <b>Dot Pad keys</b> — F1/F2 move cursor · F3 select · F4 toggle mark · Pan L/R rotate axis · Pan All replay
+        <b>Dot Pad keys</b> — F1/F2 row · Pan L/R column · F3 select · F4 mark · Pan All replay
+      </div>
+
+      <div class="footer-mark">
+        <div class="dot"></div><div class="dot"></div><div class="dot"></div>
       </div>
     `;
   }
@@ -610,18 +723,28 @@
         cellsHtml += `<div class="${cls}" data-r="${r}" data-c="${c}" onclick="sudokuClick(${r},${c})">${v||''}</div>`;
       }
     }
+    const subs = ['', '', 'ABC', 'DEF', 'GHI', 'JKL', 'MNO', 'PQRS', 'TUV', 'WXYZ'];
     let numHtml = '';
     for (let n = 1; n <= 9; n++) {
       const focused = s.mode === 'num-pad' && s.numCursor === n - 1 ? 'dotpad-focus' : '';
-      numHtml += `<button class="num-btn ${focused}" onclick="sudokuInput(${n})">${n}</button>`;
+      numHtml += `<button class="num-btn ${focused}" onclick="sudokuInput(${n})">${n}<span class="sub">${subs[n]||'&nbsp;'}</span></button>`;
     }
-    numHtml += `<button class="num-btn ${s.mode==='num-pad'&&s.numCursor===9?'dotpad-focus':''}" onclick="sudokuInput(0)">⌫</button>`;
+    // 0 is centered, ⌫ on right
+    const eraseFocused = s.mode==='num-pad'&&s.numCursor===9?'dotpad-focus':'';
 
     $('screen').innerHTML = `
-      ${renderHeader('SUDOKU', `Row ${s.cursor.r+1} · Col ${s.cursor.c+1}`)}
-      <div class="key-hints"><b>Tap</b> a cell, then a number · <b>F1/F2</b> step row · <b>Pan L/R</b> step column · <b>F3</b> open number pad</div>
+      ${renderHeader('Fill the grid', `Row ${s.cursor.r+1} · Col ${s.cursor.c+1}. Tap a cell, then a number.`, 'Stage 1 · Sudoku')}
       <div class="sudoku-grid" id="sudoku-grid">${cellsHtml}</div>
-      <div class="num-pad">${numHtml}</div>
+      <div class="pad-bar">
+        <span class="cancel" onclick="goLauncher()">Cancel</span>
+        <span class="done" onclick="sudokuCheck()">Done</span>
+      </div>
+      <div class="num-pad">
+        ${numHtml}
+        <button class="num-btn erase"></button>
+        <button class="num-btn" onclick="sudokuInput(0)">0</button>
+        <button class="num-btn erase ${eraseFocused}" onclick="sudokuInput(0)">⌫</button>
+      </div>
       <div class="action-bar">
         <button class="primary-btn" onclick="sudokuCheck()">Check</button>
         <button class="ghost-btn" onclick="sudokuReset()">Reset</button>
@@ -724,7 +847,7 @@
     const flagsLeft = s.MINES - s.flagged.flat().filter(Boolean).length;
 
     $('screen').innerHTML = `
-      ${renderHeader('MINESWEEPER', `Cursor at row ${s.cursor.r+1}, col ${s.cursor.c+1}`)}
+      ${renderHeader('Find the mines', `Cursor at row ${s.cursor.r+1}, col ${s.cursor.c+1}. Tap to reveal, right-click or F4 to flag.`, 'Stage 2 · Minesweeper')}
       <div class="key-hints"><b>Tap</b> reveal · <b>right-click</b> flag · <b>F3</b> reveal · <b>F4</b> flag</div>
       <div class="ms-status">
         <span>Mines: <b>${s.MINES}</b></span>
@@ -876,7 +999,7 @@
     }
 
     $('screen').innerHTML = `
-      ${renderHeader('NONOGRAM', `Cursor at row ${s.cursor.r+1}, col ${s.cursor.c+1}`)}
+      ${renderHeader('Reveal the picture', `Cursor at row ${s.cursor.r+1}, col ${s.cursor.c+1}. Tap to fill, right-click for X.`, 'Stage 3 · Nonogram')}
       <div class="key-hints"><b>Tap</b> fill · <b>right-click</b> mark X · <b>F3</b> fill · <b>F4</b> mark</div>
       <div class="nono-wrap" style="grid-template-columns: 80px repeat(${s.N}, 1fr)">
         <div class="nono-hint-cell" style="grid-row:1;grid-column:1"></div>
@@ -957,7 +1080,7 @@
     }
 
     $('screen').innerHTML = `
-      ${renderHeader('MAZE', `Player at row ${s.player.r+1}, col ${s.player.c+1}${s.won ? ' · ☆ Won!' : ''}`)}
+      ${renderHeader('Navigate the maze', `Player at row ${s.player.r+1}, col ${s.player.c+1}${s.won ? ' · ☆ Won!' : ''}.`, 'Stage 4 · Maze')}
       <div class="key-hints"><b>F1</b> up · <b>F2</b> down · <b>Pan L</b> left · <b>Pan R</b> right · <b>Pan All</b> describe surroundings</div>
       <div class="maze-grid" style="grid-template-columns:repeat(${s.N},1fr)">${cellsHtml}</div>
       <div class="maze-controls">
