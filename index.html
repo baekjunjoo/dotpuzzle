@@ -861,7 +861,7 @@
         ${state.screen !== 'launcher' ? `<button class="back-btn" onclick="goLauncher()" aria-label="Back to main menu" type="button">←</button>` : `<div class="brand">DOT <b>ARCADE</b></div>`}
         <div class="game-eyebrow" style="${state.screen==='launcher'?'display:none':''}">${stageLabel} ${stageNum}</div>
         <div class="header-btns">
-          <button class="icon-btn ${state.ttsOn?'active':''}" id="tts-btn" onclick="toggleTts()" type="button" aria-pressed="${state.ttsOn}" aria-label="Toggle voice announcements">VOX</button>
+          <button class="icon-btn ${state.ttsOn?'active':''}" id="tts-btn" onclick="toggleTts()" type="button" aria-pressed="${state.ttsOn}" aria-label="Toggle voice announcements">Voice</button>
           <button class="icon-btn ${state.dotpadConnected?'connected':''}" id="dp-btn" onclick="openDpOverlay()" type="button" aria-label="${state.dotpadConnected?'Dot Pad connected. Click to manage':'Connect Dot Pad'}">${state.dotpadConnected?'● PAD':'PAD'}</button>
         </div>
       </header>
@@ -1934,6 +1934,26 @@
   }
   window.renderStatusText = renderStatusText;
 
+
+  // ============================================================
+  // BRAILLE NUMERIC patterns (Sudoku / Minesweeper digits)
+  // 점자 숫자 = numeric prefix ⠼ (0x3C) + letter a-j for 1-0
+  // ============================================================
+  const BRL_NUM_PREFIX = 0x3C; // ⠼
+  const BRL_NUM = {
+    1: 0x01, 2: 0x03, 3: 0x09, 4: 0x19, 5: 0x11,
+    6: 0x0B, 7: 0x1B, 8: 0x13, 9: 0x0A, 0: 0x1A
+  };
+
+  // Sudoku 사이즈별 Dot Pad 레이아웃 (cellW × cellH + 박스 divider 위치)
+  // vDivs: 박스 경계가 cells[c]와 cells[c+1] 사이에 들어가는 column index들
+  // hDivs: 같은 방식 row
+  const SUDOKU_LAYOUT = {
+    4: { cellW: 5, cellH: 2, vDivs: [1], hDivs: [1] },  // 4*5+1=21W, 4*2+1=9H
+    6: { cellW: 4, cellH: 1, vDivs: [2], hDivs: [1, 3] },  // 6*4+1=25W, 6+2=8H
+    9: { cellW: 3, cellH: 1, vDivs: [2, 5], hDivs: [] },  // 9*3+2=29W, 9H (10행 한계)
+  };
+
   // Build 30x10 grid hex from current puzzle — FULL PAD utilization
   // Each puzzle cell expands to (cellW × cellH) Dot Pad cells based on puzzle size
   function renderPuzzleAsGraphicHex() {
@@ -1942,68 +1962,107 @@
     // ─── Sudoku ────────────────────────────────────────────
     if (state.screen === 'sudoku') {
       const s = state.sudoku;
-      const L = dpLayout(s.N, true);
-      // Digit-as-blocks: 디지트 n → n칸 dots up
-      for (let r=0; r<s.N; r++) for (let c=0; c<s.N; c++) {
-        const v = s.grid[r][c];
-        const col = L.offsetX + c * L.cellW;
-        const row = L.offsetY + r * L.cellH;
-        // Block content
-        if (v) {
-          // 채워진 셀: 디지트 = solid block (필드된 정도 표시)
-          // 작은 사이즈 (cellW=3): 디지트 비율로 dot 채움
-          if (L.cellW >= 3 && L.cellH >= 1) {
-            // 좌측: full filled, 우측: 빈 공간
-            for (let dy=0; dy<L.cellH; dy++) for (let dx=0; dx<L.cellW; dx++) {
-              const idx = (row+dy) * DP_W + (col+dx);
-              if (idx >= 0 && idx < cells.length) {
-                // 디지트 n: 셀 좌측에서 n/N 비율만큼 fill
-                const fillRatio = v / s.N;
-                if (dx / L.cellW < fillRatio) cells[idx] = 0xFF;
-                else cells[idx] = 0x00;
-              }
+      const L = SUDOKU_LAYOUT[s.N] || SUDOKU_LAYOUT[9];
+      const { cellW, cellH, vDivs, hDivs } = L;
+      const totalW = s.N * cellW + vDivs.length;
+      const totalH = s.N * cellH + hDivs.length;
+      const ox = Math.max(0, Math.floor((DP_W - totalW) / 2));
+      const oy = Math.max(0, Math.floor((DP_H - totalH) / 2));
+
+      // 각 puzzle 셀의 실제 Dot Pad 위치 계산 (divider 누적 offset)
+      function vOff(c) { return vDivs.filter(d => c > d).length; }
+      function hOff(r) { return hDivs.filter(d => r > d).length; }
+
+      // 1) 각 셀 — 점자 숫자 (numeric prefix + digit letter)
+      for (let r = 0; r < s.N; r++) {
+        for (let c = 0; c < s.N; c++) {
+          const v = s.grid[r][c];
+          const dcol = ox + c * cellW + vOff(c);
+          const drow = oy + r * cellH + hOff(r);
+          if (v && BRL_NUM[v] !== undefined) {
+            // 좌측 셀 = numeric prefix, 다음 셀 = letter
+            if (drow < DP_H) {
+              if (dcol < DP_W) cells[drow * DP_W + dcol] = BRL_NUM_PREFIX;
+              if (dcol + 1 < DP_W) cells[drow * DP_W + dcol + 1] = BRL_NUM[v];
             }
-          } else {
-            dpSetBlock(cells, col, row, L.cellW, L.cellH, 0xFF);
+          }
+          // Cursor: 셀 외곽 전체 frame
+          if (r === s.cursor.r && c === s.cursor.c) {
+            for (let dy = 0; dy < cellH; dy++) for (let dx = 0; dx < cellW; dx++) {
+              const rr = drow + dy, cc = dcol + dx;
+              if (cc < 0 || cc >= DP_W || rr < 0 || rr >= DP_H) continue;
+              let mark = 0;
+              if (dy === 0) mark |= 0x09; // top dots 1+4
+              if (dy === cellH - 1) mark |= 0xC0; // bottom dots 7+8 (8-dot mode)
+              if (dx === 0) mark |= 0x47; // left col 1+2+3+7
+              if (dx === cellW - 1) mark |= 0xB8; // right col 4+5+6+8
+              cells[rr * DP_W + cc] |= mark;
+            }
           }
         }
-        // 박스 디바이더 — 우/하 박스 경계에 빈 칸 한 줄 권장이지만 공간 제약상 mark만
-        // Cursor highlight: 블록 외곽선
-        if (r === s.cursor.r && c === s.cursor.c) {
-          dpOutline(cells, col, row, L.cellW, L.cellH, 0xFF);
-        }
       }
+
+      // 2) 세로 박스 divider 라인 (vDivs[i] = col index인 위치 직후에 1셀)
+      vDivs.forEach((divCol, idx) => {
+        const dcol = ox + (divCol + 1) * cellW + idx;
+        for (let dy = 0; dy < totalH; dy++) {
+          const drow = oy + dy;
+          if (dcol < DP_W && drow < DP_H) cells[drow * DP_W + dcol] = 0xFF;
+        }
+      });
+
+      // 3) 가로 박스 divider 라인
+      hDivs.forEach((divRow, idx) => {
+        const drow = oy + (divRow + 1) * cellH + idx;
+        for (let dx = 0; dx < totalW; dx++) {
+          const dcol = ox + dx;
+          if (drow < DP_H && dcol < DP_W) cells[drow * DP_W + dcol] = 0xFF;
+        }
+      });
     } else if (state.screen === 'minesweeper') {
       const s = state.minesweeper;
       const L = dpLayout(s.N, true);
       for (let r=0; r<s.N; r++) for (let c=0; c<s.N; c++) {
         const col = L.offsetX + c * L.cellW;
         const row = L.offsetY + r * L.cellH;
-        let pattern = 0;
         if (s.revealed[r][c]) {
           const v = s.grid[r][c];
           if (v === -1) {
-            // mine = full block (모든 dot up)
+            // mine = solid block (all dots up)
             dpSetBlock(cells, col, row, L.cellW, L.cellH, 0xFF);
-            continue;
           } else if (v > 0) {
-            // n nearby — dot count fill ratio (1=1/6, 2=2/6, ..., 6=full)
-            const ratio = Math.min(1, v / 6);
-            for (let dy=0; dy<L.cellH; dy++) for (let dx=0; dx<L.cellW; dx++) {
-              const idx = (row+dy) * DP_W + (col+dx);
-              if (dx / L.cellW < ratio) cells[idx] = 0xFF;
+            // Number — 점자 숫자 (cellW ≥ 2면 prefix+letter, 아니면 dot count fallback)
+            if (L.cellW >= 2 && BRL_NUM[v] !== undefined) {
+              if (col < DP_W && row < DP_H) cells[row * DP_W + col] = BRL_NUM_PREFIX;
+              if (col + 1 < DP_W && row < DP_H) cells[row * DP_W + col + 1] = BRL_NUM[v];
+            } else {
+              // Fallback: dot count
+              const dots = Math.min(6, v);
+              let pattern = 0;
+              for (let i = 0; i < dots; i++) pattern |= (1 << i);
+              dpSetBlock(cells, col, row, L.cellW, L.cellH, pattern);
             }
           }
-          // safe revealed (v=0) → empty
+          // safe revealed (v=0) → empty (no dots)
         } else if (s.flagged[r][c]) {
-          // flag = X 패턴 (대각선 2개 dot)
-          dpSetBlock(cells, col, row, L.cellW, L.cellH, 0x12); // dots 2+5
+          // flag — X pattern (dots 2+5)
+          dpSetBlock(cells, col, row, L.cellW, L.cellH, 0x12);
         } else {
-          // hidden = 단일 dot in center (catch but distinguishable from empty)
-          dpSetBlock(cells, col, row, L.cellW, L.cellH, 0x09); // dots 1+4
+          // hidden — dots 1+4 (top corners) so still feel-able
+          dpSetBlock(cells, col, row, L.cellW, L.cellH, 0x09);
         }
         if (r === s.cursor.r && c === s.cursor.c) {
-          dpOutline(cells, col, row, L.cellW, L.cellH, 0xFF);
+          // Cursor frame (outline 외각만)
+          for (let dy = 0; dy < L.cellH; dy++) for (let dx = 0; dx < L.cellW; dx++) {
+            const rr = row + dy, cc = col + dx;
+            if (cc < 0 || cc >= DP_W || rr < 0 || rr >= DP_H) continue;
+            let mark = 0;
+            if (dy === 0) mark |= 0x09;
+            if (dy === L.cellH - 1) mark |= 0xC0;
+            if (dx === 0) mark |= 0x47;
+            if (dx === L.cellW - 1) mark |= 0xB8;
+            cells[rr * DP_W + cc] |= mark;
+          }
         }
       }
     } else if (state.screen === 'nonogram') {
@@ -2071,7 +2130,7 @@
     }
     if (state.screen === 'sudoku') {
       const s = state.sudoku;
-      return `Sudoku ${s.N} by ${s.N}, difficulty ${DIFF_LABEL[state.difficulty.sudoku]}. F1 row up, F2 row down, pan left and right for columns. F3 cycles digit at cursor. F4 checks the puzzle. On screen, use Read row, What's missing, Check buttons. F1 plus F4 home. F3 plus F4 help.`;
+      return `Sudoku ${s.N} by ${s.N}, difficulty ${DIFF_LABEL[state.difficulty.sudoku]}. Each filled cell on Dot Pad shows numeric prefix plus letter. Box boundaries marked with solid dot lines. F1 row up, F2 row down, pan left and right for columns. F3 cycles digit at cursor. F4 checks the puzzle. On screen, use Read row, What's missing, Check buttons. F1 plus F4 home. F3 plus F4 help.`;
     }
     if (state.screen === 'minesweeper') {
       const s = state.minesweeper;
