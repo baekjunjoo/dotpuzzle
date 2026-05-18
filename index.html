@@ -932,7 +932,8 @@
       </button>
 
       <div class="key-hints" style="margin-top:14px">
-        <b>Dot Pad keys</b> — F1/F2 row · Pan L/R column · F3 select · F4 mark · Pan All replay
+        <b>Dot Pad keys</b> — F1/F2 nav · F3 select · F4 mark · Pan L/R · Pan All replay<br/>
+        <b>Combos</b> — F3+F4 context help · F1+F4 back to menu
       </div>
 
       <div class="footer-mark">
@@ -1008,6 +1009,7 @@
         <button class="tool-btn" onclick="sudokuReadRow()"><span class="ico">📢</span>Read row</button>
         <button class="tool-btn" onclick="sudokuWhatMissing()"><span class="ico">?</span>What's missing</button>
         <button class="tool-btn" onclick="sudokuCheck()"><span class="ico">✓</span>Check</button>
+        <button class="tool-btn" onclick="announceContextHelp()"><span class="ico">?</span>Help</button>
       </div>
       <div class="sudoku-grid" id="sudoku-grid" style="grid-template-columns: repeat(${s.N}, 1fr)">${cellsHtml}</div>
       <div class="pad-bar">
@@ -1183,6 +1185,7 @@
         <button class="tool-btn" onclick="msSafeHint()"><span class="ico">💡</span>Safe hint</button>
         <button class="tool-btn" onclick="msReadAround()"><span class="ico">📢</span>Read around</button>
         <button class="tool-btn" onclick="state.minesweeper=null;initMinesweeper();render()"><span class="ico">↺</span>New game</button>
+        <button class="tool-btn" onclick="announceContextHelp()"><span class="ico">?</span>Help</button>
       </div>
       <div class="ms-grid" id="ms-grid" style="grid-template-columns: repeat(${s.N}, 1fr)">${cellsHtml}</div>
       <div class="key-hints"><b>Tap</b> reveal · <b>right-click</b> flag · Dot Pad: <b>F3</b> reveal · <b>F4</b> flag</div>
@@ -1351,6 +1354,7 @@
         <button class="tool-btn" onclick="nonoReadHints()"><span class="ico">📢</span>Read hints</button>
         <button class="tool-btn" onclick="nonoProgress()"><span class="ico">📊</span>Progress</button>
         <button class="tool-btn" onclick="nonoCheck()"><span class="ico">✓</span>Check</button>
+        <button class="tool-btn" onclick="announceContextHelp()"><span class="ico">?</span>Help</button>
       </div>
       <div class="key-hints"><b>Tap</b> fill · <b>right-click</b> mark X · <b>F3</b> fill · <b>F4</b> mark</div>
       <div class="nono-wrap" style="grid-template-columns: 80px repeat(${s.N}, 1fr)">
@@ -1490,6 +1494,7 @@
       <div class="tools-bar">
         <button class="tool-btn" onclick="mazeAutoStep()"><span class="ico">▶▶</span>Auto to fork</button>
         <button class="tool-btn" onclick="mazeDescribe()"><span class="ico">📢</span>Describe</button>
+        <button class="tool-btn" onclick="announceContextHelp()"><span class="ico">?</span>Help</button>
       </div>
       <div class="key-hints"><b>F1</b> up · <b>F2</b> down · <b>Pan L</b> left · <b>Pan R</b> right · <b>Pan All</b> describe surroundings</div>
       <div class="maze-grid" style="grid-template-columns:repeat(${s.N},1fr)">${cellsHtml}</div>
@@ -1753,9 +1758,70 @@
   // ============================================================
   // DOT PAD INPUT — key handling
   // ============================================================
+  // ============================================================
+  // CONTEXT HELP (F3+F4) — A.T. Guys 스타일
+  // ============================================================
+  function getContextHelp() {
+    if (state.screen === 'launcher') {
+      return 'DotPuzzle Pack main menu. F1 previous game. F2 next game. F3 to start. Pan left and right also work. Press difficulty chip on screen to change. Press F3 plus F4 for help. Press F1 plus F4 to return here from any screen.';
+    }
+    if (state.screen === 'sudoku') {
+      const s = state.sudoku;
+      return `Sudoku ${s.N} by ${s.N}, difficulty ${DIFF_LABEL[state.difficulty.sudoku]}. F1 row up, F2 row down, pan left and right for columns. F3 cycles digit at cursor. F4 checks the puzzle. On screen, use Read row, What's missing, Check buttons. F1 plus F4 home. F3 plus F4 help.`;
+    }
+    if (state.screen === 'minesweeper') {
+      const s = state.minesweeper;
+      return `Minesweeper ${s.N} by ${s.N} with ${s.MINES} mines, difficulty ${DIFF_LABEL[state.difficulty.minesweeper]}. F1 row up, F2 row down, pan left and right for columns. F3 reveals current cell. F4 flags or unflags. First click is always safe. On screen use Safe hint and Read around for help. F1 plus F4 home. F3 plus F4 help.`;
+    }
+    if (state.screen === 'nonogram') {
+      const s = state.nonogram;
+      return `Nonogram ${s.N} by ${s.N}, difficulty ${DIFF_LABEL[state.difficulty.nonogram]}. F1 row up, F2 row down, pan left and right for columns. F3 fills or empties. F4 marks X or clears. Completed rows and columns are announced automatically. On screen use Read hints and Progress. F1 plus F4 home. F3 plus F4 help.`;
+    }
+    if (state.screen === 'maze') {
+      const s = state.maze;
+      return `Maze ${s.N} by ${s.N}, difficulty ${DIFF_LABEL[state.difficulty.maze]}. F1 move up, F2 move down, pan left for left, pan right for right. Pan all describes surroundings. On screen, Auto to fork advances to the next junction. F1 plus F4 home. F3 plus F4 help.`;
+    }
+    return 'DotPuzzle Pack. F1 plus F4 to return home. F3 plus F4 for help.';
+  }
+
+  function announceContextHelp() {
+    const text = getContextHelp();
+    if (state.ttsOn) { try { window.speechSynthesis.cancel(); } catch(e){} speak(text); }
+    if (state.dotpadConnected && typeof brailleSetText === 'function') {
+      // 점자 영역은 brailleSetText 없으니 displayTextData 직접 호출
+      try {
+        // 압축된 키 안내만 짧게 점자에
+        const compact = state.screen === 'launcher'
+          ? 'Menu F3 start F1/F2 nav'
+          : state.screen + ' F3 sel F4 mark F1+F4 home';
+        // No braille helper in this app yet — display via Dot Pad text line
+        if (window.DotPad && window.DotPad.sdk && window.DotPad.sdk.displayTextData) {
+          // Convert text to braille hex by simple ascii table (handled later if liblouis added)
+          // For now, push the text via Dot Pad text area as raw text-mode bytes is non-trivial.
+          // Skip braille — voice carries the help.
+        }
+      } catch(e){}
+    }
+    toast('Help · F1+F4 home, F3+F4 help', 3000);
+  }
+
+  function goHomeShortcut() {
+    if (state.screen === 'launcher') {
+      announceContextHelp(); // 이미 홈이면 help 발화
+      return;
+    }
+    speak('Home.');
+    goLauncher();
+  }
+  window.announceContextHelp = announceContextHelp;
+  window.goHomeShortcut = goHomeShortcut;
+
   function onDotpadKey(device, keyCode, msg) {
     if (!window.DotPad) return;
     const KC = window.DotPad.KeyCodes;
+    // 전역 콤보 키 — A.T. Guys 패턴
+    if (keyCode === KC.KeyFunction34) { announceContextHelp(); return; }
+    if (keyCode === KC.KeyFunction14) { goHomeShortcut(); return; }
     if (state.screen === 'launcher') {
       // F1/F2 = navigate game cards · F3 = select
       const cards = Array.from(document.querySelectorAll('.game-card'));
@@ -1895,6 +1961,19 @@
   // KEYBOARD SHORTCUTS (desktop testing)
   // ============================================================
   document.addEventListener('keydown', (e) => {
+    // 전역 단축키 (인풋 제외)
+    if (!e.target.matches('input, textarea')) {
+      if (e.key === '?' || e.key === 'h' || e.key === 'H') {
+        e.preventDefault();
+        announceContextHelp();
+        return;
+      }
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        goHomeShortcut();
+        return;
+      }
+    }
     if (state.screen === 'maze' && !e.target.matches('input, textarea')) {
       if (e.key === 'ArrowUp') { e.preventDefault(); mazeMove(-1, 0); }
       else if (e.key === 'ArrowDown') { e.preventDefault(); mazeMove(1, 0); }
