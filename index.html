@@ -360,10 +360,30 @@
     }
     .sudoku-cell {
       background: var(--bg-card);
-      display: flex; justify-content: center; align-items: center;
+      display: flex; flex-direction: column;
+      justify-content: center; align-items: center;
+      gap: 3px;
       font-size: 14px; font-weight: 700; color: var(--fg);
       cursor: pointer; user-select: none;
       position: relative;
+      padding: 4px;
+    }
+    .sudoku-cell .cell-digit {
+      font-size: 16px; font-weight: 700; line-height: 1;
+    }
+    .sudoku-cell .cell-braille {
+      width: 60%; max-width: 32px; height: auto;
+      opacity: 0.85;
+    }
+    .sudoku-cell .cell-braille .b-up { fill: var(--fg); }
+    .sudoku-cell .cell-braille .b-dn { fill: var(--line); }
+    .sudoku-cell.focused .cell-braille .b-up { fill: var(--bg-card); }
+    .sudoku-cell.focused .cell-braille .b-dn { fill: rgba(255,255,255,0.3); }
+    /* 좁은 그리드(9x9)는 braille 좀 더 작게 */
+    @media (max-width: 480px) {
+      .sudoku-cell { padding: 2px; gap: 1px; }
+      .sudoku-cell .cell-digit { font-size: 12px; }
+      .sudoku-cell .cell-braille { width: 80%; max-width: 22px; }
     }
     .sudoku-cell.given { color: var(--fg); background: var(--bg-soft); }
     .sudoku-cell.user { color: var(--info); }
@@ -372,6 +392,14 @@
     /* Box dividers — class-driven for variable sizes */
     .sudoku-cell.box-r { border-right: 2px solid var(--fg); }
     .sudoku-cell.box-b { border-bottom: 2px solid var(--fg); }
+
+
+    /* 9x9 그리드는 셀이 작아서 digit만 표시 */
+    .sudoku-grid[aria-colcount="9"] .cell-braille { display: none; }
+    .sudoku-grid[aria-colcount="9"] .cell-digit { font-size: 14px; }
+    /* 4x4는 셀 크니까 braille 크게 */
+    .sudoku-grid[aria-colcount="4"] .cell-braille { max-width: 48px; width: 70%; }
+    .sudoku-grid[aria-colcount="4"] .cell-digit { font-size: 22px; }
 
     /* iOS-style number pad */
     .num-pad {
@@ -1103,6 +1131,29 @@
   // ============================================================
   // SUDOKU
   // ============================================================
+  // 화면 셀 안에 표시할 braille 점자 패턴 SVG (numeric prefix + digit letter)
+  // 6-dot 표준 braille: 2 col × 3 row. 8-dot mode 무시 (시각엔 6-dot만)
+  function renderBrailleDigitSVG(digit) {
+    const letterByte = BRL_NUM[digit];
+    if (letterByte === undefined) return '';
+    function dots(byte) {
+      // bit 0=dot1(0,0) 1=dot2(0,1) 2=dot3(0,2) 3=dot4(1,0) 4=dot5(1,1) 5=dot6(1,2)
+      const positions = [
+        [0,0,'1'], [0,1,'2'], [0,2,'3'],
+        [1,0,'4'], [1,1,'5'], [1,2,'6']
+      ];
+      return positions.map(([x, y, d]) => {
+        const up = (byte >> (parseInt(d)-1)) & 1;
+        return `<circle cx="${x*5+3}" cy="${y*5+3}" r="1.8" class="${up?'b-up':'b-dn'}"/>`;
+      }).join('');
+    }
+    // 2 cells 옆으로 = 13 wide (cell1 8 + gap 5)
+    return `<svg class="cell-braille" viewBox="0 0 18 18" aria-hidden="true">
+      ${dots(BRL_NUM_PREFIX)}
+      <g transform="translate(10,0)">${dots(letterByte)}</g>
+    </svg>`;
+  }
+
   function initSudoku() {
     if (state.sudoku) return;
     const cfg = SUDOKU_BY_DIFF[state.difficulty.sudoku];
@@ -1135,7 +1186,8 @@
           isBoxBottom ? 'box-b' : '',
         ].filter(Boolean).join(' ');
         const cellLabel = (v ? `Row ${r+1} column ${c+1}, ${s.given[r][c]?'given':'user'} value ${v}` : `Row ${r+1} column ${c+1}, empty`);
-        cellsHtml += `<div class="${cls}" role="gridcell" aria-label="${cellLabel}" data-r="${r}" data-c="${c}" onclick="sudokuClick(${r},${c})">${v||''}</div>`;
+        const brlVis = v ? renderBrailleDigitSVG(v) : '';
+        cellsHtml += `<div class="${cls}" role="gridcell" aria-label="${cellLabel}" data-r="${r}" data-c="${c}" onclick="sudokuClick(${r},${c})"><span class="cell-digit" aria-hidden="true">${v||''}</span>${brlVis}</div>`;
       }
     }
     const subs = ['', '', 'ABC', 'DEF', 'GHI', 'JKL', 'MNO', 'PQRS', 'TUV', 'WXYZ'];
@@ -1949,9 +2001,9 @@
   // vDivs: 박스 경계가 cells[c]와 cells[c+1] 사이에 들어가는 column index들
   // hDivs: 같은 방식 row
   const SUDOKU_LAYOUT = {
-    4: { cellW: 5, cellH: 2, vDivs: [1], hDivs: [1] },  // 4*5+1=21W, 4*2+1=9H
-    6: { cellW: 4, cellH: 1, vDivs: [2], hDivs: [1, 3] },  // 6*4+1=25W, 6+2=8H
-    9: { cellW: 3, cellH: 1, vDivs: [2, 5], hDivs: [] },  // 9*3+2=29W, 9H (10행 한계)
+    4: { cellW: 6, cellH: 2, vDivs: [1], hDivs: [1] },  // 4*6+1=25W, 4*2+1=9H — 디지트 중앙 [2,3]
+    6: { cellW: 4, cellH: 1, vDivs: [2], hDivs: [1, 3] },  // 6*4+1=25W, 6+2=8H — 디지트 [1,2]
+    9: { cellW: 3, cellH: 1, vDivs: [2, 5], hDivs: [] },  // 9*3+2=29W, 9H — 디지트 [0,1]
   };
 
   // Build 30x10 grid hex from current puzzle — FULL PAD utilization
@@ -1980,10 +2032,14 @@
           const dcol = ox + c * cellW + vOff(c);
           const drow = oy + r * cellH + hOff(r);
           if (v && BRL_NUM[v] !== undefined) {
-            // 좌측 셀 = numeric prefix, 다음 셀 = letter
-            if (drow < DP_H) {
-              if (dcol < DP_W) cells[drow * DP_W + dcol] = BRL_NUM_PREFIX;
-              if (dcol + 1 < DP_W) cells[drow * DP_W + dcol + 1] = BRL_NUM[v];
+            // 디지트 (2 cells wide) 를 cellW 안에서 가로 중앙 + 세로 중앙
+            const padX = Math.floor((cellW - 2) / 2);
+            const padY = Math.floor((cellH - 1) / 2);
+            const ddc = dcol + padX;
+            const ddr = drow + padY;
+            if (ddr < DP_H) {
+              if (ddc < DP_W) cells[ddr * DP_W + ddc] = BRL_NUM_PREFIX;
+              if (ddc + 1 < DP_W) cells[ddr * DP_W + ddc + 1] = BRL_NUM[v];
             }
           }
           // Cursor: 셀 외곽 전체 frame
@@ -2033,8 +2089,12 @@
           } else if (v > 0) {
             // Number — 점자 숫자 (cellW ≥ 2면 prefix+letter, 아니면 dot count fallback)
             if (L.cellW >= 2 && BRL_NUM[v] !== undefined) {
-              if (col < DP_W && row < DP_H) cells[row * DP_W + col] = BRL_NUM_PREFIX;
-              if (col + 1 < DP_W && row < DP_H) cells[row * DP_W + col + 1] = BRL_NUM[v];
+              const padX = Math.floor((L.cellW - 2) / 2);
+              const padY = Math.floor((L.cellH - 1) / 2);
+              const mc = col + padX;
+              const mr = row + padY;
+              if (mc < DP_W && mr < DP_H) cells[mr * DP_W + mc] = BRL_NUM_PREFIX;
+              if (mc + 1 < DP_W && mr < DP_H) cells[mr * DP_W + mc + 1] = BRL_NUM[v];
             } else {
               // Fallback: dot count
               const dots = Math.min(6, v);
