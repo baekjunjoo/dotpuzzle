@@ -16,8 +16,8 @@
       --line-soft: #f0f0ee;
       --fg: #0a0a0a;
       --fg-soft: #4a4a4a;
-      --fg-dim: #8a8a8a;
-      --fg-faint: #c5c5c3;
+      --fg-dim: #6d6d6d;   /* WCAG AA 5:1 on white (was #8a8a8a = 3.93:1) */
+      --fg-faint: #949494; /* WCAG 1.4.11 3.1:1 on white (was #c5c5c3 = 1.86:1) — UI/borders only */
       --dot: #0a0a0a;
       /* Game accents */
       --c-sudoku: #7fb2e8;
@@ -35,6 +35,35 @@
       --info: #4a8fcf;
     }
     * { box-sizing: border-box; }
+
+    /* ============ A11Y v0.7 — WCAG 2.4.7 ============ */
+    button:focus-visible,
+    [role="button"]:focus-visible,
+    [role="grid"]:focus-visible,
+    a:focus-visible,
+    input:focus-visible,
+    select:focus-visible,
+    textarea:focus-visible {
+      outline: 3px solid var(--dot) !important;
+      outline-offset: 2px !important;
+      box-shadow: 0 0 0 1px var(--bg-card), 0 0 0 4px var(--dot) !important;
+    }
+    /* Skip link */
+    .skip-link {
+      position: fixed; top: -100px; left: 16px; z-index: 9999;
+      background: var(--fg); color: var(--bg-card);
+      padding: 12px 20px; font-weight: 700; font-size: 14px;
+      text-decoration: none; border-radius: 999px;
+      transition: top 0.15s;
+    }
+    .skip-link:focus { top: 12px; outline: 3px solid var(--accent); outline-offset: 2px; }
+    /* sr-only — visually hidden but for screen readers */
+    .sr-only {
+      position: absolute; width: 1px; height: 1px; padding: 0;
+      margin: -1px; overflow: hidden; clip: rect(0,0,0,0);
+      white-space: nowrap; border: 0;
+    }
+
     html, body {
       margin: 0; padding: 0;
       background: var(--bg-app);
@@ -105,19 +134,23 @@
     .header-btns { display: flex; gap: 6px; align-items: center; }
     .icon-btn {
       background: var(--bg-card); border: 1px solid var(--line);
-      color: var(--fg-soft); font-size: 10px; padding: 6px 11px;
+      color: var(--fg-soft); font-size: 11px; padding: 10px 14px;
       cursor: pointer; font-family: inherit; letter-spacing: 0.08em;
       border-radius: 999px; font-weight: 600;
       transition: all 0.15s;
+      min-height: 44px; min-width: 44px;
+      display: inline-flex; align-items: center; justify-content: center;
     }
     .icon-btn:hover { border-color: var(--fg-faint); color: var(--fg); }
     .icon-btn.active { background: var(--fg); color: white; border-color: var(--fg); }
     .icon-btn.connected { background: var(--ok); color: white; border-color: var(--ok); }
     .back-btn {
       background: var(--bg-card); border: 1px solid var(--line);
-      color: var(--fg); font-size: 14px; padding: 6px 10px;
+      color: var(--fg); font-size: 16px; padding: 10px 14px;
       cursor: pointer; font-family: inherit;
       border-radius: 999px; line-height: 1;
+      min-height: 44px; min-width: 44px;
+      display: inline-flex; align-items: center; justify-content: center;
     }
     .back-btn:hover { background: var(--bg-soft); }
 
@@ -185,7 +218,6 @@
       display: flex; gap: 18px; align-items: center;
       font-family: inherit;
       position: relative;
-      outline: none;
     }
     .game-card:hover {
       border-color: var(--fg-faint);
@@ -283,9 +315,10 @@
     .tool-btn {
       background: var(--bg-card); border: 1px solid var(--line);
       color: var(--fg); font-size: 13px; font-weight: 600;
-      padding: 9px 14px; border-radius: 999px;
+      padding: 12px 16px; border-radius: 999px;
       cursor: pointer; font-family: inherit;
       transition: all 0.15s;
+      min-height: 44px;
     }
     .tool-btn:hover { background: var(--bg-soft); border-color: var(--fg-faint); }
     .tool-btn .ico { display: inline-block; margin-right: 5px; }
@@ -613,13 +646,14 @@
   </style>
 </head>
 <body>
-  <div class="app" id="app">
-    <div id="screen"></div>
-  </div>
+  <a class="skip-link" href="#screen">Skip to main content</a>
+  <main class="app" id="app" role="main">
+    <div id="screen" tabindex="-1"></div>
+  </main>
 
-  <div class="overlay" id="dp-overlay">
+  <div class="overlay" id="dp-overlay" role="dialog" aria-modal="true" aria-labelledby="dp-modal-title">
     <div class="modal">
-      <h3>🔌 CONNECT DOT PAD</h3>
+      <h3 id="dp-modal-title">🔌 CONNECT DOT PAD</h3>
       <p>Chrome / Edge desktop · HTTPS only. Pair the device near your laptop.</p>
       <div class="row">
         <button class="primary-btn" onclick="connectBle()">📶 Bluetooth</button>
@@ -631,7 +665,7 @@
     </div>
   </div>
 
-  <div id="toast"></div>
+  <div id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
 
   <!-- Dot Pad SDK (Web SDK 3.0.0) -->
   <script type="module">
@@ -823,14 +857,14 @@
     const stageNum = { launcher: '', sudoku: '1', minesweeper: '2', nonogram: '3', maze: '4' }[state.screen] || '';
     const stageLabel = { sudoku: 'Sudoku', minesweeper: 'Minesweeper', nonogram: 'Nonogram', maze: 'Maze' }[state.screen] || '';
     return `
-      <div class="topbar">
-        ${state.screen !== 'launcher' ? `<button class="back-btn" onclick="goLauncher()" aria-label="Back">←</button>` : `<div class="brand">DOT <b>ARCADE</b></div>`}
+      <header class="topbar" role="banner">
+        ${state.screen !== 'launcher' ? `<button class="back-btn" onclick="goLauncher()" aria-label="Back to main menu" type="button">←</button>` : `<div class="brand">DOT <b>ARCADE</b></div>`}
         <div class="game-eyebrow" style="${state.screen==='launcher'?'display:none':''}">${stageLabel} ${stageNum}</div>
         <div class="header-btns">
-          <button class="icon-btn ${state.ttsOn?'active':''}" id="tts-btn" onclick="toggleTts()">VOX</button>
-          <button class="icon-btn ${state.dotpadConnected?'connected':''}" id="dp-btn" onclick="openDpOverlay()">${state.dotpadConnected?'● PAD':'PAD'}</button>
+          <button class="icon-btn ${state.ttsOn?'active':''}" id="tts-btn" onclick="toggleTts()" type="button" aria-pressed="${state.ttsOn}" aria-label="Toggle voice announcements">VOX</button>
+          <button class="icon-btn ${state.dotpadConnected?'connected':''}" id="dp-btn" onclick="openDpOverlay()" type="button" aria-label="${state.dotpadConnected?'Dot Pad connected. Click to manage':'Connect Dot Pad'}">${state.dotpadConnected?'● PAD':'PAD'}</button>
         </div>
-      </div>
+      </header>
       ${titleHtml ? `
         <div class="game-head">
           ${eyebrowText ? `<div class="game-eyebrow">${eyebrowText}</div>` : ''}
@@ -1100,7 +1134,8 @@
           isBoxRight ? 'box-r' : '',
           isBoxBottom ? 'box-b' : '',
         ].filter(Boolean).join(' ');
-        cellsHtml += `<div class="${cls}" data-r="${r}" data-c="${c}" onclick="sudokuClick(${r},${c})">${v||''}</div>`;
+        const cellLabel = (v ? `Row ${r+1} column ${c+1}, ${s.given[r][c]?'given':'user'} value ${v}` : `Row ${r+1} column ${c+1}, empty`);
+        cellsHtml += `<div class="${cls}" role="gridcell" aria-label="${cellLabel}" data-r="${r}" data-c="${c}" onclick="sudokuClick(${r},${c})">${v||''}</div>`;
       }
     }
     const subs = ['', '', 'ABC', 'DEF', 'GHI', 'JKL', 'MNO', 'PQRS', 'TUV', 'WXYZ'];
@@ -1121,7 +1156,7 @@
         <button class="tool-btn" onclick="sudokuCheck()"><span class="ico">✓</span>Check</button>
         <button class="tool-btn" onclick="announceContextHelp()"><span class="ico">?</span>Help</button>
       </div>
-      <div class="sudoku-grid" id="sudoku-grid" style="grid-template-columns: repeat(${s.N}, 1fr)">${cellsHtml}</div>
+      <div class="sudoku-grid" id="sudoku-grid" role="grid" tabindex="0" aria-label="Sudoku ${s.N} by ${s.N} grid. Arrow keys to navigate, number keys to fill." aria-rowcount="${s.N}" aria-colcount="${s.N}" style="grid-template-columns: repeat(${s.N}, 1fr)">${cellsHtml}</div>
       <div class="pad-bar">
         <span class="cancel" onclick="goLauncher()">Back</span>
         <span class="done" onclick="sudokuCheck()">Check</span>
@@ -1280,7 +1315,9 @@
       } else if (s.flagged[r][c]) {
         cls += ' flagged';
       }
-      cellsHtml += `<div class="${cls}" onclick="msClick(${r},${c})" oncontextmenu="event.preventDefault();msFlag(${r},${c});return false">${label}</div>`;
+      const msState = s.revealed[r][c] ? (s.grid[r][c] === -1 ? 'mine' : s.grid[r][c] === 0 ? 'safe empty' : `${s.grid[r][c]} mines nearby`) : (s.flagged[r][c] ? 'flagged' : 'hidden');
+      const msLabel = `Row ${r+1} column ${c+1}, ${msState}`;
+      cellsHtml += `<div class="${cls}" role="gridcell" aria-label="${msLabel}" onclick="msClick(${r},${c})" oncontextmenu="event.preventDefault();msFlag(${r},${c});return false">${label}</div>`;
     }
     const flagsLeft = s.MINES - s.flagged.flat().filter(Boolean).length;
 
@@ -1297,7 +1334,7 @@
         <button class="tool-btn" onclick="state.minesweeper=null;initMinesweeper();render()"><span class="ico">↺</span>New game</button>
         <button class="tool-btn" onclick="announceContextHelp()"><span class="ico">?</span>Help</button>
       </div>
-      <div class="ms-grid" id="ms-grid" style="grid-template-columns: repeat(${s.N}, 1fr)">${cellsHtml}</div>
+      <div class="ms-grid" id="ms-grid" role="grid" tabindex="0" aria-label="Minesweeper ${s.N} by ${s.N} grid. Arrow keys to navigate, Space to reveal, F to flag." aria-rowcount="${s.N}" aria-colcount="${s.N}" style="grid-template-columns: repeat(${s.N}, 1fr)">${cellsHtml}</div>
       <div class="key-hints"><b>Tap</b> reveal · <b>right-click</b> flag · Dot Pad: <b>F3</b> reveal · <b>F4</b> flag</div>
       ${renderDotpadPreview()}
     `;
@@ -1455,7 +1492,9 @@
       const v = s.state[r][c];
       const focused = (r === s.cursor.r && c === s.cursor.c) ? 'focused' : '';
       const cls = `nono-cell ${v===1?'filled':''} ${v===2?'x':''} ${focused}`;
-      cellsHtml += `<div class="${cls}" onclick="nonoClick(${r},${c})" oncontextmenu="event.preventDefault();nonoX(${r},${c});return false"></div>`;
+      const nonoState = v === 1 ? 'filled' : v === 2 ? 'x marked' : 'empty';
+      const nonoLabel = `Row ${r+1} column ${c+1}, ${nonoState}. Row hint ${s.rowHints[r].join(' ')}. Column hint ${s.colHints[c].join(' ')}.`;
+      cellsHtml += `<div class="${cls}" role="gridcell" aria-label="${nonoLabel}" onclick="nonoClick(${r},${c})" oncontextmenu="event.preventDefault();nonoX(${r},${c});return false"></div>`;
     }
 
     $('screen').innerHTML = `
@@ -1471,7 +1510,7 @@
         <div class="nono-hint-cell" style="grid-row:1;grid-column:1"></div>
         ${[...Array(s.N).keys()].map(c => `<div class="nono-hint-cell col" style="grid-row:1;grid-column:${c+2}">${s.colHints[c].join('<br/>')}</div>`).join('')}
         ${[...Array(s.N).keys()].map(r => `<div class="nono-hint-cell row" style="grid-row:${r+2};grid-column:1">${s.rowHints[r].join(' ')}</div>`).join('')}
-        <div class="nono-grid-area" style="grid-row:2/span ${s.N};grid-column:2/span ${s.N};display:grid;grid-template-columns:repeat(${s.N},1fr);grid-template-rows:repeat(${s.N},1fr)">${cellsHtml}</div>
+        <div class="nono-grid-area" role="grid" tabindex="0" aria-label="Nonogram ${s.N} by ${s.N} grid. Arrow keys to navigate, Space to fill, F to X mark." aria-rowcount="${s.N}" aria-colcount="${s.N}" style="grid-row:2/span ${s.N};grid-column:2/span ${s.N};display:grid;grid-template-columns:repeat(${s.N},1fr);grid-template-rows:repeat(${s.N},1fr)">${cellsHtml}</div>
       </div>
       <div class="action-bar">
         <button class="primary-btn" onclick="nonoCheck()">Check</button>
@@ -1596,7 +1635,7 @@
       if (s.grid[r][c] === 1) cls += ' wall';
       if (s.player.r === r && s.player.c === c) cls += ' player';
       if (s.goal.r === r && s.goal.c === c) cls += ' goal';
-      cellsHtml += `<div class="${cls}"></div>`;
+      cellsHtml += `<div class="${cls}" role="gridcell"></div>`;
     }
 
     $('screen').innerHTML = `
@@ -1607,7 +1646,7 @@
         <button class="tool-btn" onclick="announceContextHelp()"><span class="ico">?</span>Help</button>
       </div>
       <div class="key-hints"><b>F1</b> up · <b>F2</b> down · <b>Pan L</b> left · <b>Pan R</b> right · <b>Pan All</b> describe surroundings</div>
-      <div class="maze-grid" style="grid-template-columns:repeat(${s.N},1fr)">${cellsHtml}</div>
+      <div class="maze-grid" role="grid" tabindex="0" aria-label="Maze ${s.N} by ${s.N}. Arrow keys to move player to goal." aria-rowcount="${s.N}" aria-colcount="${s.N}" style="grid-template-columns:repeat(${s.N},1fr)">${cellsHtml}</div>
       <div class="maze-controls">
         <button class="num-btn empty"></button>
         <button class="num-btn" onclick="mazeMove(-1, 0)">▲</button>
