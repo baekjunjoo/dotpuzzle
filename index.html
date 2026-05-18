@@ -214,6 +214,34 @@
       display: flex; justify-content: center; align-items: center;
       font-size: 14px; flex-shrink: 0;
     }
+    /* Difficulty chip */
+    .diff-chip {
+      display: inline-flex; align-items: center; gap: 4px;
+      background: var(--bg-soft); border: 1px solid var(--line);
+      color: var(--fg); font-size: 10px; font-weight: 700;
+      padding: 4px 10px; border-radius: 999px;
+      cursor: pointer; font-family: inherit; letter-spacing: 0.06em;
+      margin-top: 6px; transition: all 0.15s;
+    }
+    .diff-chip:hover { background: var(--bg-card); border-color: var(--fg-faint); }
+    .diff-chip .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--dot); }
+    .diff-chip[data-level="easy"] .dot { background: #67b87b; }
+    .diff-chip[data-level="medium"] .dot { background: #f5c957; }
+    .diff-chip[data-level="hard"] .dot { background: #d04848; }
+    /* Helper tools bar (per-game) */
+    .tools-bar {
+      display: flex; gap: 6px; flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+    .tool-btn {
+      background: var(--bg-card); border: 1px solid var(--line);
+      color: var(--fg); font-size: 11px; font-weight: 600;
+      padding: 7px 12px; border-radius: 999px;
+      cursor: pointer; font-family: inherit;
+      transition: all 0.15s;
+    }
+    .tool-btn:hover { background: var(--bg-soft); border-color: var(--fg-faint); }
+    .tool-btn .ico { display: inline-block; margin-right: 4px; }
 
     /* Game header */
     .game-head {
@@ -260,13 +288,9 @@
     .sudoku-cell.user { color: var(--info); }
     .sudoku-cell.bad { color: var(--danger); }
     .sudoku-cell.focused { background: var(--accent); color: var(--fg); z-index: 2; }
-    /* 3x3 box dividers via thick borders */
-    .sudoku-grid > .sudoku-cell:nth-child(3n) { border-right: 2px solid var(--fg); }
-    .sudoku-grid > .sudoku-cell:nth-child(9n) { border-right: none; }
-    .sudoku-grid > .sudoku-cell:nth-child(n+19):nth-child(-n+27),
-    .sudoku-grid > .sudoku-cell:nth-child(n+46):nth-child(-n+54) {
-      border-bottom: 2px solid var(--fg);
-    }
+    /* Box dividers — class-driven for variable sizes */
+    .sudoku-cell.box-r { border-right: 2px solid var(--fg); }
+    .sudoku-cell.box-b { border-bottom: 2px solid var(--fg); }
 
     /* iOS-style number pad */
     .num-pad {
@@ -536,17 +560,141 @@
   // STATE
   // ============================================================
   const state = {
-    screen: 'launcher', // launcher | sudoku | minesweeper | nonogram | maze
+    screen: 'launcher',
     dotpadConnected: false,
     dotpadDevice: null,
     dotpadName: '',
     dotpadCursor: 0,
     ttsOn: true,
+    difficulty: { sudoku: 'easy', minesweeper: 'easy', nonogram: 'easy', maze: 'easy' },
     sudoku: null,
     minesweeper: null,
     nonogram: null,
     maze: null,
   };
+
+  // ============================================================
+  // DIFFICULTY CONFIGS
+  // ============================================================
+  const DIFF_LABEL = { easy: 'Easy', medium: 'Medium', hard: 'Hard' };
+  const DIFF_LEVELS = ['easy', 'medium', 'hard'];
+
+  // Sudoku puzzles per size — [size, puzzle, solution]
+  const SUDOKU_4 = {
+    puzzle: [
+      [1,0, 0,4],
+      [0,4, 1,0],
+      [0,1, 4,0],
+      [4,0, 0,1],
+    ],
+    solution: [
+      [1,3, 2,4],
+      [2,4, 1,3],
+      [3,1, 4,2],
+      [4,2, 3,1],
+    ],
+    box: { rows: 2, cols: 2 },
+    max: 4,
+  };
+  const SUDOKU_6 = {
+    puzzle: [
+      [1,0, 0, 0,5,0],
+      [0,5, 0, 1,0,0],
+      [0,0, 4, 0,0,1],
+      [5,0, 0, 0,3,0],
+      [0,4, 0, 0,0,2],
+      [0,0, 2, 3,0,0],
+    ],
+    solution: [
+      [1,2,3, 4,5,6],
+      [4,5,6, 1,2,3],
+      [2,3,4, 5,6,1],
+      [5,6,1, 2,3,4],
+      [3,4,5, 6,1,2],
+      [6,1,2, 3,4,5],
+    ],
+    box: { rows: 2, cols: 3 },
+    max: 6,
+  };
+  const SUDOKU_9 = {
+    puzzle: [
+      [5,3,0, 0,7,0, 0,0,0],
+      [6,0,0, 1,9,5, 0,0,0],
+      [0,9,8, 0,0,0, 0,6,0],
+      [8,0,0, 0,6,0, 0,0,3],
+      [4,0,0, 8,0,3, 0,0,1],
+      [7,0,0, 0,2,0, 0,0,6],
+      [0,6,0, 0,0,0, 2,8,0],
+      [0,0,0, 4,1,9, 0,0,5],
+      [0,0,0, 0,8,0, 0,7,9],
+    ],
+    solution: [
+      [5,3,4, 6,7,8, 9,1,2],
+      [6,7,2, 1,9,5, 3,4,8],
+      [1,9,8, 3,4,2, 5,6,7],
+      [8,5,9, 7,6,1, 4,2,3],
+      [4,2,6, 8,5,3, 7,9,1],
+      [7,1,3, 9,2,4, 8,5,6],
+      [9,6,1, 5,3,7, 2,8,4],
+      [2,8,7, 4,1,9, 6,3,5],
+      [3,4,5, 2,8,6, 1,7,9],
+    ],
+    box: { rows: 3, cols: 3 },
+    max: 9,
+  };
+  const SUDOKU_BY_DIFF = { easy: SUDOKU_4, medium: SUDOKU_6, hard: SUDOKU_9 };
+
+  // Minesweeper config
+  const MS_CFG = {
+    easy: { N: 5, mines: 3 },
+    medium: { N: 7, mines: 7 },
+    hard: { N: 9, mines: 10 },
+  };
+
+  // Nonogram pictures
+  const NONO_PLUS_5 = [
+    [0,0,1,0,0],
+    [0,0,1,0,0],
+    [1,1,1,1,1],
+    [0,0,1,0,0],
+    [0,0,1,0,0],
+  ];
+  const NONO_SMILE_8 = [
+    [0,0,1,1,1,1,0,0],
+    [0,1,0,0,0,0,1,0],
+    [1,0,1,0,0,1,0,1],
+    [1,0,0,0,0,0,0,1],
+    [1,0,1,0,0,1,0,1],
+    [1,0,0,1,1,0,0,1],
+    [0,1,0,0,0,0,1,0],
+    [0,0,1,1,1,1,0,0],
+  ];
+  const NONO_SMILE_10 = [
+    [0,0,1,1,1,1,1,1,0,0],
+    [0,1,0,0,0,0,0,0,1,0],
+    [1,0,0,1,0,0,1,0,0,1],
+    [1,0,0,1,0,0,1,0,0,1],
+    [1,0,0,0,0,0,0,0,0,1],
+    [1,0,1,0,0,0,0,1,0,1],
+    [1,0,0,1,0,0,1,0,0,1],
+    [1,0,0,0,1,1,0,0,0,1],
+    [0,1,0,0,0,0,0,0,1,0],
+    [0,0,1,1,1,1,1,1,0,0],
+  ];
+  const NONO_BY_DIFF = { easy: NONO_PLUS_5, medium: NONO_SMILE_8, hard: NONO_SMILE_10 };
+
+  // Maze size
+  const MAZE_BY_DIFF = { easy: 7, medium: 11, hard: 15 };
+
+  function cycleDifficulty(game) {
+    const cur = state.difficulty[game];
+    const idx = DIFF_LEVELS.indexOf(cur);
+    state.difficulty[game] = DIFF_LEVELS[(idx + 1) % DIFF_LEVELS.length];
+    // Reset puzzle state so next start uses new size
+    state[game] = null;
+    renderLauncher();
+  }
+  window.cycleDifficulty = cycleDifficulty;
 
   // ============================================================
   // UTILITIES
@@ -638,6 +786,28 @@
   // ============================================================
   // LAUNCHER
   // ============================================================
+  function getSudokuSub() {
+    const n = SUDOKU_BY_DIFF[state.difficulty.sudoku].max;
+    const box = SUDOKU_BY_DIFF[state.difficulty.sudoku].box;
+    return `${n} × ${n} · Fill rows, columns, and ${box.rows}×${box.cols} boxes with 1-${n}.`;
+  }
+  function getMsSub() {
+    const cfg = MS_CFG[state.difficulty.minesweeper];
+    return `${cfg.N} × ${cfg.N} · ${cfg.mines} mines. Reveal safe cells, flag the mines.`;
+  }
+  function getNonoSub() {
+    const n = NONO_BY_DIFF[state.difficulty.nonogram].length;
+    return `${n} × ${n} · Use row and column hints to reveal the picture.`;
+  }
+  function getMazeSub() {
+    const n = MAZE_BY_DIFF[state.difficulty.maze];
+    return `${n} × ${n} · Navigate from start to goal. Pan keys steer.`;
+  }
+  window.getSudokuSub = getSudokuSub;
+  window.getMsSub = getMsSub;
+  window.getNonoSub = getNonoSub;
+  window.getMazeSub = getMazeSub;
+
   function renderLauncher() {
     $('screen').innerHTML = `
       ${renderHeader('', '')}
@@ -667,7 +837,10 @@
 </svg></div>
         <div class="game-card-body">
           <div class="game-card-title">Sudoku</div>
-          <div class="game-card-sub">9 × 9 · Fill rows, columns, and 3×3 boxes with 1-9.</div>
+          <div class="game-card-sub" id="sudoku-sub">${getSudokuSub()}</div>
+          <button type="button" class="diff-chip" data-level="${state.difficulty.sudoku}" onclick="event.stopPropagation();cycleDifficulty('sudoku')">
+            <span class="dot"></span>${DIFF_LABEL[state.difficulty.sudoku]} · tap to change
+          </button>
         </div>
         <div class="game-card-arrow">→</div>
       </button>
@@ -688,7 +861,10 @@
 </svg></div>
         <div class="game-card-body">
           <div class="game-card-title">Minesweeper</div>
-          <div class="game-card-sub">9 × 9 · Reveal safe cells. Numbers count adjacent mines.</div>
+          <div class="game-card-sub">${getMsSub()}</div>
+          <button type="button" class="diff-chip" data-level="${state.difficulty.minesweeper}" onclick="event.stopPropagation();cycleDifficulty('minesweeper')">
+            <span class="dot"></span>${DIFF_LABEL[state.difficulty.minesweeper]} · tap to change
+          </button>
         </div>
         <div class="game-card-arrow">→</div>
       </button>
@@ -718,7 +894,10 @@
 </svg></div>
         <div class="game-card-body">
           <div class="game-card-title">Nonogram</div>
-          <div class="game-card-sub">10 × 10 · Use row/column hints to reveal the picture.</div>
+          <div class="game-card-sub">${getNonoSub()}</div>
+          <button type="button" class="diff-chip" data-level="${state.difficulty.nonogram}" onclick="event.stopPropagation();cycleDifficulty('nonogram')">
+            <span class="dot"></span>${DIFF_LABEL[state.difficulty.nonogram]} · tap to change
+          </button>
         </div>
         <div class="game-card-arrow">→</div>
       </button>
@@ -744,7 +923,10 @@
 </svg></div>
         <div class="game-card-body">
           <div class="game-card-title">Maze</div>
-          <div class="game-card-sub">15 × 15 · Navigate from start to goal. Pan keys steer.</div>
+          <div class="game-card-sub">${getMazeSub()}</div>
+          <button type="button" class="diff-chip" data-level="${state.difficulty.maze}" onclick="event.stopPropagation();cycleDifficulty('maze')">
+            <span class="dot"></span>${DIFF_LABEL[state.difficulty.maze]} · tap to change
+          </button>
         </div>
         <div class="game-card-arrow">→</div>
       </button>
@@ -776,37 +958,17 @@
   // ============================================================
   // SUDOKU
   // ============================================================
-  // Simple deterministic puzzle (1 seed for demo)
-  const SUDOKU_PUZZLE = [
-    [5,3,0, 0,7,0, 0,0,0],
-    [6,0,0, 1,9,5, 0,0,0],
-    [0,9,8, 0,0,0, 0,6,0],
-    [8,0,0, 0,6,0, 0,0,3],
-    [4,0,0, 8,0,3, 0,0,1],
-    [7,0,0, 0,2,0, 0,0,6],
-    [0,6,0, 0,0,0, 2,8,0],
-    [0,0,0, 4,1,9, 0,0,5],
-    [0,0,0, 0,8,0, 0,7,9],
-  ];
-  const SUDOKU_SOLUTION = [
-    [5,3,4, 6,7,8, 9,1,2],
-    [6,7,2, 1,9,5, 3,4,8],
-    [1,9,8, 3,4,2, 5,6,7],
-    [8,5,9, 7,6,1, 4,2,3],
-    [4,2,6, 8,5,3, 7,9,1],
-    [7,1,3, 9,2,4, 8,5,6],
-    [9,6,1, 5,3,7, 2,8,4],
-    [2,8,7, 4,1,9, 6,3,5],
-    [3,4,5, 2,8,6, 1,7,9],
-  ];
-
   function initSudoku() {
     if (state.sudoku) return;
+    const cfg = SUDOKU_BY_DIFF[state.difficulty.sudoku];
     state.sudoku = {
-      grid: SUDOKU_PUZZLE.map(r => r.slice()),
-      given: SUDOKU_PUZZLE.map(r => r.map(v => v !== 0)),
+      N: cfg.max,
+      box: cfg.box,
+      solution: cfg.solution.map(r => r.slice()),
+      grid: cfg.puzzle.map(r => r.slice()),
+      given: cfg.puzzle.map(r => r.map(v => v !== 0)),
       cursor: { r: 0, c: 0 },
-      mode: 'cell', // cell | num-pad
+      mode: 'cell',
       numCursor: 0,
     };
   }
@@ -814,46 +976,77 @@
   function renderSudoku() {
     const s = state.sudoku;
     let cellsHtml = '';
-    for (let r = 0; r < 9; r++) {
-      for (let c = 0; c < 9; c++) {
+    for (let r = 0; r < s.N; r++) {
+      for (let c = 0; c < s.N; c++) {
         const v = s.grid[r][c];
+        // Box dividers — last col of box gets right border, last row of box gets bottom
+        const isBoxRight = (c + 1) % s.box.cols === 0 && c < s.N - 1;
+        const isBoxBottom = (r + 1) % s.box.rows === 0 && r < s.N - 1;
         const cls = [
           'sudoku-cell',
           s.given[r][c] ? 'given' : (v ? 'user' : ''),
-          (r === s.cursor.r && c === s.cursor.c && s.mode === 'cell') ? 'focused' : ''
+          (r === s.cursor.r && c === s.cursor.c && s.mode === 'cell') ? 'focused' : '',
+          isBoxRight ? 'box-r' : '',
+          isBoxBottom ? 'box-b' : '',
         ].filter(Boolean).join(' ');
         cellsHtml += `<div class="${cls}" data-r="${r}" data-c="${c}" onclick="sudokuClick(${r},${c})">${v||''}</div>`;
       }
     }
     const subs = ['', '', 'ABC', 'DEF', 'GHI', 'JKL', 'MNO', 'PQRS', 'TUV', 'WXYZ'];
     let numHtml = '';
-    for (let n = 1; n <= 9; n++) {
+    for (let n = 1; n <= s.N; n++) {
       const focused = s.mode === 'num-pad' && s.numCursor === n - 1 ? 'dotpad-focus' : '';
       numHtml += `<button class="num-btn ${focused}" onclick="sudokuInput(${n})">${n}<span class="sub">${subs[n]||'&nbsp;'}</span></button>`;
     }
-    // 0 is centered, ⌫ on right
-    const eraseFocused = s.mode==='num-pad'&&s.numCursor===9?'dotpad-focus':'';
+    const eraseFocused = s.mode==='num-pad'&&s.numCursor===s.N?'dotpad-focus':'';
 
+    // Pad layout: for 4x4 = 2 rows of 2, for 6x6 = 2 rows of 3, for 9x9 = 3 rows of 3
+    const padCols = s.N === 4 ? 2 : 3;
     $('screen').innerHTML = `
-      ${renderHeader('Fill the grid', `Row ${s.cursor.r+1} · Col ${s.cursor.c+1}. Tap a cell, then a number.`, 'Stage 1 · Sudoku')}
-      <div class="sudoku-grid" id="sudoku-grid">${cellsHtml}</div>
-      <div class="pad-bar">
-        <span class="cancel" onclick="goLauncher()">Cancel</span>
-        <span class="done" onclick="sudokuCheck()">Done</span>
+      ${renderHeader('Fill the grid', `${s.N} × ${s.N} · Row ${s.cursor.r+1} · Col ${s.cursor.c+1}`, `Stage 1 · Sudoku · ${DIFF_LABEL[state.difficulty.sudoku]}`)}
+      <div class="tools-bar">
+        <button class="tool-btn" onclick="sudokuReadRow()"><span class="ico">📢</span>Read row</button>
+        <button class="tool-btn" onclick="sudokuWhatMissing()"><span class="ico">?</span>What's missing</button>
+        <button class="tool-btn" onclick="sudokuCheck()"><span class="ico">✓</span>Check</button>
       </div>
-      <div class="num-pad">
+      <div class="sudoku-grid" id="sudoku-grid" style="grid-template-columns: repeat(${s.N}, 1fr)">${cellsHtml}</div>
+      <div class="pad-bar">
+        <span class="cancel" onclick="goLauncher()">Back</span>
+        <span class="done" onclick="sudokuCheck()">Check</span>
+      </div>
+      <div class="num-pad" style="grid-template-columns: repeat(${padCols}, 1fr)">
         ${numHtml}
-        <button class="num-btn erase"></button>
-        <button class="num-btn" onclick="sudokuInput(0)">0</button>
         <button class="num-btn erase ${eraseFocused}" onclick="sudokuInput(0)">⌫</button>
       </div>
       <div class="action-bar">
-        <button class="primary-btn" onclick="sudokuCheck()">Check</button>
         <button class="ghost-btn" onclick="sudokuReset()">Reset</button>
       </div>
       ${renderDotpadPreview()}
     `;
   }
+
+  // Sudoku helper: read current row
+  function sudokuReadRow() {
+    const s = state.sudoku;
+    const row = s.grid[s.cursor.r];
+    const cells = row.map((v, i) => v ? v.toString() : 'empty').join(', ');
+    const msg = `Row ${s.cursor.r+1}: ${cells}.`;
+    toast(msg, 4000); speak(msg);
+  }
+  // Sudoku helper: what's missing in current row
+  function sudokuWhatMissing() {
+    const s = state.sudoku;
+    const row = s.grid[s.cursor.r];
+    const has = new Set(row.filter(v => v));
+    const missing = [];
+    for (let n = 1; n <= s.N; n++) if (!has.has(n)) missing.push(n);
+    const msg = missing.length === 0
+      ? `Row ${s.cursor.r+1} complete.`
+      : `Row ${s.cursor.r+1} needs: ${missing.join(', ')}.`;
+    toast(msg, 4000); speak(msg);
+  }
+  window.sudokuReadRow = sudokuReadRow;
+  window.sudokuWhatMissing = sudokuWhatMissing;
 
   function sudokuClick(r, c) {
     const s = state.sudoku;
@@ -873,9 +1066,9 @@
   function sudokuCheck() {
     const s = state.sudoku;
     let wrong = 0, empty = 0;
-    for (let r=0; r<9; r++) for (let c=0; c<9; c++) {
+    for (let r=0; r<s.N; r++) for (let c=0; c<s.N; c++) {
       if (s.grid[r][c] === 0) empty++;
-      else if (s.grid[r][c] !== SUDOKU_SOLUTION[r][c]) wrong++;
+      else if (s.grid[r][c] !== s.solution[r][c]) wrong++;
     }
     if (empty === 0 && wrong === 0) {
       toast('☆ Solved!', 3000);
@@ -898,35 +1091,66 @@
   // MINESWEEPER
   // ============================================================
   function initMinesweeper() {
-    const N = 9, MINES = 10;
+    const cfg = MS_CFG[state.difficulty.minesweeper];
+    const N = cfg.N, MINES = cfg.mines;
     const grid = Array.from({length: N}, () => Array(N).fill(0));
     const revealed = Array.from({length: N}, () => Array(N).fill(false));
     const flagged = Array.from({length: N}, () => Array(N).fill(false));
-    // Place mines
-    let placed = 0;
-    while (placed < MINES) {
-      const r = Math.floor(Math.random() * N);
-      const c = Math.floor(Math.random() * N);
-      if (grid[r][c] !== -1) { grid[r][c] = -1; placed++; }
-    }
-    // Compute numbers
-    for (let r=0; r<N; r++) for (let c=0; c<N; c++) {
-      if (grid[r][c] === -1) continue;
-      let cnt = 0;
-      for (let dr=-1; dr<=1; dr++) for (let dc=-1; dc<=1; dc++) {
-        const nr = r+dr, nc = c+dc;
-        if (nr<0||nr>=N||nc<0||nc>=N) continue;
-        if (grid[nr][nc] === -1) cnt++;
-      }
-      grid[r][c] = cnt;
-    }
     state.minesweeper = {
       N, MINES,
       grid, revealed, flagged,
       cursor: { r: 0, c: 0 },
       gameOver: false, won: false,
+      firstClick: true, // 첫 클릭 안전 보장
     };
   }
+
+  // 첫 클릭 위치 안전하게: 그 셀과 주변 8칸 제외하고 mine 배치
+  function msPlaceMines(safeR, safeC) {
+    const s = state.minesweeper;
+    const safe = new Set();
+    for (let dr=-1; dr<=1; dr++) for (let dc=-1; dc<=1; dc++) {
+      safe.add((safeR+dr) + ',' + (safeC+dc));
+    }
+    let placed = 0;
+    while (placed < s.MINES) {
+      const r = Math.floor(Math.random() * s.N);
+      const c = Math.floor(Math.random() * s.N);
+      if (s.grid[r][c] !== -1 && !safe.has(r + ',' + c)) {
+        s.grid[r][c] = -1; placed++;
+      }
+    }
+    for (let r=0; r<s.N; r++) for (let c=0; c<s.N; c++) {
+      if (s.grid[r][c] === -1) continue;
+      let cnt = 0;
+      for (let dr=-1; dr<=1; dr++) for (let dc=-1; dc<=1; dc++) {
+        const nr = r+dr, nc = c+dc;
+        if (nr<0||nr>=s.N||nc<0||nc>=s.N) continue;
+        if (s.grid[nr][nc] === -1) cnt++;
+      }
+      s.grid[r][c] = cnt;
+    }
+  }
+
+  // Safe hint — 안전한 셀 한 개 음성으로 안내
+  function msSafeHint() {
+    const s = state.minesweeper;
+    if (s.firstClick) { toast('Tap any cell to start'); speak('Tap any cell to start.'); return; }
+    // 가려져 있고 지뢰가 아닌 셀 중 하나 선택
+    const safeHidden = [];
+    for (let r=0; r<s.N; r++) for (let c=0; c<s.N; c++) {
+      if (!s.revealed[r][c] && !s.flagged[r][c] && s.grid[r][c] !== -1) {
+        safeHidden.push({r, c});
+      }
+    }
+    if (safeHidden.length === 0) { toast('No safe hidden cells left'); return; }
+    const pick = safeHidden[Math.floor(Math.random() * safeHidden.length)];
+    s.cursor.r = pick.r; s.cursor.c = pick.c;
+    const msg = `Safe cell: row ${pick.r+1} column ${pick.c+1}.`;
+    toast(msg, 3000); speak(msg);
+    render();
+  }
+  window.msSafeHint = msSafeHint;
 
   function renderMinesweeper() {
     const s = state.minesweeper;
@@ -949,26 +1173,56 @@
     const flagsLeft = s.MINES - s.flagged.flat().filter(Boolean).length;
 
     $('screen').innerHTML = `
-      ${renderHeader('Find the mines', `Cursor at row ${s.cursor.r+1}, col ${s.cursor.c+1}. Tap to reveal, right-click or F4 to flag.`, 'Stage 2 · Minesweeper')}
-      <div class="key-hints"><b>Tap</b> reveal · <b>right-click</b> flag · <b>F3</b> reveal · <b>F4</b> flag</div>
+      ${renderHeader('Find the mines', `${s.N} × ${s.N} · ${s.MINES} mines · Row ${s.cursor.r+1}, Col ${s.cursor.c+1}`, `Stage 2 · Minesweeper · ${DIFF_LABEL[state.difficulty.minesweeper]}`)}
       <div class="ms-status">
         <span>Mines: <b>${s.MINES}</b></span>
         <span>Flags left: <b>${flagsLeft}</b></span>
-        <span>${s.gameOver ? (s.won ? '☆ Win' : '☠ Lost') : 'Playing'}</span>
+        <span>${s.gameOver ? (s.won ? '☆ Won' : '☠ Lost') : (s.firstClick ? 'Tap to start' : 'Playing')}</span>
+      </div>
+      <div class="tools-bar">
+        <button class="tool-btn" onclick="msSafeHint()"><span class="ico">💡</span>Safe hint</button>
+        <button class="tool-btn" onclick="msReadAround()"><span class="ico">📢</span>Read around</button>
+        <button class="tool-btn" onclick="state.minesweeper=null;initMinesweeper();render()"><span class="ico">↺</span>New game</button>
       </div>
       <div class="ms-grid" id="ms-grid" style="grid-template-columns: repeat(${s.N}, 1fr)">${cellsHtml}</div>
-      <div class="action-bar">
-        <button class="primary-btn" onclick="initMinesweeper();render()">New Game</button>
-      </div>
+      <div class="key-hints"><b>Tap</b> reveal · <b>right-click</b> flag · Dot Pad: <b>F3</b> reveal · <b>F4</b> flag</div>
       ${renderDotpadPreview()}
     `;
   }
+
+  // Minesweeper: read 8 cells around cursor
+  function msReadAround() {
+    const s = state.minesweeper;
+    const dirs = [
+      ['north-west', -1, -1], ['north', -1, 0], ['north-east', -1, 1],
+      ['west', 0, -1], ['east', 0, 1],
+      ['south-west', 1, -1], ['south', 1, 0], ['south-east', 1, 1],
+    ];
+    const around = dirs.map(([name, dr, dc]) => {
+      const nr = s.cursor.r + dr, nc = s.cursor.c + dc;
+      if (nr<0||nr>=s.N||nc<0||nc>=s.N) return null;
+      let st;
+      if (s.revealed[nr][nc]) {
+        const v = s.grid[nr][nc];
+        st = v === -1 ? 'mine' : v === 0 ? 'empty' : v + ' nearby';
+      } else st = s.flagged[nr][nc] ? 'flagged' : 'hidden';
+      return name + ' ' + st;
+    }).filter(Boolean);
+    const msg = around.join('. ');
+    toast(msg, 5000); speak(msg);
+  }
+  window.msReadAround = msReadAround;
 
   function msClick(r, c) {
     const s = state.minesweeper;
     if (s.gameOver) return;
     s.cursor.r = r; s.cursor.c = c;
     if (s.flagged[r][c]) { render(); return; }
+    // 첫 클릭이면 mine 배치를 안전하게
+    if (s.firstClick) {
+      msPlaceMines(r, c);
+      s.firstClick = false;
+    }
     if (s.grid[r][c] === -1) {
       // Reveal all mines
       for (let r2=0; r2<s.N; r2++) for (let c2=0; c2<s.N; c2++)
@@ -1019,19 +1273,7 @@
   // ============================================================
   // NONOGRAM
   // ============================================================
-  // 10x10 picture — simple "smile" face
-  const NONO_TARGET = [
-    [0,0,1,1,1,1,1,1,0,0],
-    [0,1,0,0,0,0,0,0,1,0],
-    [1,0,0,1,0,0,1,0,0,1],
-    [1,0,0,1,0,0,1,0,0,1],
-    [1,0,0,0,0,0,0,0,0,1],
-    [1,0,1,0,0,0,0,1,0,1],
-    [1,0,0,1,0,0,1,0,0,1],
-    [1,0,0,0,1,1,0,0,0,1],
-    [0,1,0,0,0,0,0,0,1,0],
-    [0,0,1,1,1,1,1,1,0,0],
-  ];
+  // Nonogram target — from NONO_BY_DIFF based on difficulty
 
   function computeHints(grid, axis) {
     // axis: 'row' or 'col'
@@ -1066,14 +1308,17 @@
 
   function initNonogram() {
     if (state.nonogram) return;
-    const N = 10;
+    const target = NONO_BY_DIFF[state.difficulty.nonogram];
+    const N = target.length;
     state.nonogram = {
       N,
-      target: NONO_TARGET,
-      state: Array.from({length: N}, () => Array(N).fill(0)), // 0 empty, 1 filled, 2 x
-      rowHints: computeHints(NONO_TARGET, 'row'),
-      colHints: computeHints(NONO_TARGET, 'col'),
+      target,
+      state: Array.from({length: N}, () => Array(N).fill(0)),
+      rowHints: computeHints(target, 'row'),
+      colHints: computeHints(target, 'col'),
       cursor: { r: 0, c: 0 },
+      completedRows: new Set(),
+      completedCols: new Set(),
     };
   }
 
@@ -1101,7 +1346,12 @@
     }
 
     $('screen').innerHTML = `
-      ${renderHeader('Reveal the picture', `Cursor at row ${s.cursor.r+1}, col ${s.cursor.c+1}. Tap to fill, right-click for X.`, 'Stage 3 · Nonogram')}
+      ${renderHeader('Reveal the picture', `${s.N} × ${s.N} · Row ${s.cursor.r+1}, Col ${s.cursor.c+1}`, `Stage 3 · Nonogram · ${DIFF_LABEL[state.difficulty.nonogram]}`)}
+      <div class="tools-bar">
+        <button class="tool-btn" onclick="nonoReadHints()"><span class="ico">📢</span>Read hints</button>
+        <button class="tool-btn" onclick="nonoProgress()"><span class="ico">📊</span>Progress</button>
+        <button class="tool-btn" onclick="nonoCheck()"><span class="ico">✓</span>Check</button>
+      </div>
       <div class="key-hints"><b>Tap</b> fill · <b>right-click</b> mark X · <b>F3</b> fill · <b>F4</b> mark</div>
       <div class="nono-wrap" style="grid-template-columns: 80px repeat(${s.N}, 1fr)">
         <div class="nono-hint-cell" style="grid-row:1;grid-column:1"></div>
@@ -1121,9 +1371,63 @@
     const s = state.nonogram;
     s.cursor.r = r; s.cursor.c = c;
     s.state[r][c] = s.state[r][c] === 1 ? 0 : 1;
+    nonoCheckLineComplete(r, c);
     render();
     speak(s.state[r][c] === 1 ? 'Filled' : 'Empty');
   }
+
+  // 행/열이 정답과 일치하면 자동 음성 알림 (한 번만)
+  function nonoCheckLineComplete(r, c) {
+    const s = state.nonogram;
+    // Row r 체크
+    if (!s.completedRows.has(r)) {
+      let rowOk = true;
+      for (let cc=0; cc<s.N; cc++) {
+        if ((s.state[r][cc] === 1) !== (s.target[r][cc] === 1)) { rowOk = false; break; }
+      }
+      if (rowOk) {
+        s.completedRows.add(r);
+        setTimeout(() => speak(`Row ${r+1} complete.`), 200);
+        toast(`✓ Row ${r+1} complete`, 1500);
+      }
+    }
+    // Col c 체크
+    if (!s.completedCols.has(c)) {
+      let colOk = true;
+      for (let rr=0; rr<s.N; rr++) {
+        if ((s.state[rr][c] === 1) !== (s.target[rr][c] === 1)) { colOk = false; break; }
+      }
+      if (colOk) {
+        s.completedCols.add(c);
+        setTimeout(() => speak(`Column ${c+1} complete.`), 500);
+        toast(`✓ Column ${c+1} complete`, 1500);
+      }
+    }
+  }
+  window.nonoCheckLineComplete = nonoCheckLineComplete;
+  function nonoReadHints() {
+    const s = state.nonogram;
+    const rh = s.rowHints[s.cursor.r].join(' ');
+    const ch = s.colHints[s.cursor.c].join(' ');
+    const msg = `Row ${s.cursor.r+1} hint: ${rh}. Column ${s.cursor.c+1} hint: ${ch}.`;
+    toast(msg, 4000); speak(msg);
+  }
+  function nonoProgress() {
+    const s = state.nonogram;
+    let correct = 0, total = 0;
+    for (let r=0; r<s.N; r++) for (let c=0; c<s.N; c++) {
+      if (s.target[r][c] === 1) {
+        total++;
+        if (s.state[r][c] === 1) correct++;
+      }
+    }
+    const pct = total === 0 ? 0 : Math.round(100 * correct / total);
+    const msg = `Progress: ${pct} percent. ${correct} of ${total} filled correctly.`;
+    toast(msg, 3000); speak(msg);
+  }
+  window.nonoReadHints = nonoReadHints;
+  window.nonoProgress = nonoProgress;
+
   function nonoX(r, c) {
     const s = state.nonogram;
     s.cursor.r = r; s.cursor.c = c;
@@ -1147,9 +1451,9 @@
   // MAZE
   // ============================================================
   function initMaze() {
-    const N = 15;
-    // Recursive backtracker (always N odd for proper walls)
-    const grid = Array.from({length: N}, () => Array(N).fill(1)); // 1 = wall, 0 = path
+    const N = MAZE_BY_DIFF[state.difficulty.maze];
+    // N은 홀수여야 함 (모두 홀수: 7, 11, 15)
+    const grid = Array.from({length: N}, () => Array(N).fill(1));
     function carve(r, c) {
       grid[r][c] = 0;
       const dirs = [[-2,0],[2,0],[0,-2],[0,2]].sort(() => Math.random() - 0.5);
@@ -1182,7 +1486,11 @@
     }
 
     $('screen').innerHTML = `
-      ${renderHeader('Navigate the maze', `Player at row ${s.player.r+1}, col ${s.player.c+1}${s.won ? ' · ☆ Won!' : ''}.`, 'Stage 4 · Maze')}
+      ${renderHeader('Navigate the maze', `${s.N} × ${s.N} · Player at row ${s.player.r+1}, col ${s.player.c+1}${s.won ? ' · ☆ Won!' : ''}`, `Stage 4 · Maze · ${DIFF_LABEL[state.difficulty.maze]}`)}
+      <div class="tools-bar">
+        <button class="tool-btn" onclick="mazeAutoStep()"><span class="ico">▶▶</span>Auto to fork</button>
+        <button class="tool-btn" onclick="mazeDescribe()"><span class="ico">📢</span>Describe</button>
+      </div>
       <div class="key-hints"><b>F1</b> up · <b>F2</b> down · <b>Pan L</b> left · <b>Pan R</b> right · <b>Pan All</b> describe surroundings</div>
       <div class="maze-grid" style="grid-template-columns:repeat(${s.N},1fr)">${cellsHtml}</div>
       <div class="maze-controls">
@@ -1216,6 +1524,41 @@
     render();
     speak(['up','down','left','right'][dr === -1 ? 0 : dr === 1 ? 1 : dc === -1 ? 2 : 3] + (s.won ? '. Goal reached.' : '.'));
   }
+
+  // 갈림길(2개 이상 출구) 또는 막다른 길까지 자동 이동
+  function mazeAutoStep() {
+    const s = state.maze;
+    if (s.won) return;
+    // 현재 진입 방향 추정: 이전 위치 기억
+    let lastDr = 0, lastDc = 0;
+    let steps = 0;
+    while (steps < 50) {
+      const exits = [];
+      const dirs = [[-1,0],[1,0],[0,-1],[0,1]];
+      for (const [dr, dc] of dirs) {
+        const nr = s.player.r + dr, nc = s.player.c + dc;
+        if (nr<0||nr>=s.N||nc<0||nc>=s.N) continue;
+        if (s.grid[nr][nc] === 0) exits.push([dr, dc]);
+      }
+      // 이전 방향 빼고 남은 길
+      const forward = exits.filter(([dr, dc]) => !(dr === -lastDr && dc === -lastDc));
+      if (forward.length === 0) break; // 막다른 길
+      if (forward.length >= 2 && steps > 0) break; // 갈림길
+      const [dr, dc] = forward[0];
+      s.player.r += dr; s.player.c += dc;
+      lastDr = dr; lastDc = dc;
+      steps++;
+      if (s.player.r === s.goal.r && s.player.c === s.goal.c) {
+        s.won = true;
+        toast('☆ Reached the goal!', 3000); speak('Goal reached.');
+        break;
+      }
+    }
+    render();
+    const msg = `Moved ${steps} steps. Row ${s.player.r+1}, col ${s.player.c+1}.`;
+    if (!s.won) speak(msg);
+  }
+  window.mazeAutoStep = mazeAutoStep;
 
   function mazeDescribe() {
     const s = state.maze;
@@ -1269,13 +1612,11 @@
     const out = new Array(90).fill(0);
     if (state.screen === 'sudoku') {
       const s = state.sudoku;
-      // 9 cells × ~3 dots-each = 27 dots showing current row
       const row = s.grid[s.cursor.r];
-      for (let i = 0; i < 9; i++) {
+      for (let i = 0; i < s.N; i++) {
         const v = row[i];
-        // Filled cell = 3 dots up, empty = 0
         if (v) { out[i*3] = 1; out[i*3+1] = 1; out[i*3+2] = 1; }
-        if (i === s.cursor.c) { out[i*3] = 1; out[i*3+2] = 1; } // bracket-style cursor
+        if (i === s.cursor.c) { out[i*3] = 1; out[i*3+2] = 1; }
       }
     } else if (state.screen === 'minesweeper') {
       const s = state.minesweeper;
@@ -1336,10 +1677,8 @@
       cells[row*30 + col] = dotsBitmask;
     }
     if (state.screen === 'sudoku') {
-      // 9x9 → place each cell at col 1+i, row 1+r (2-cell spacing optional)
       const s = state.sudoku;
-      // Use cells at columns 1-9, rows 0-8 (with row 9 as cursor row)
-      for (let r=0; r<9; r++) for (let c=0; c<9; c++) {
+      for (let r=0; r<s.N; r++) for (let c=0; c<s.N; c++) {
         const v = s.grid[r][c];
         let dots = 0;
         if (v) {
@@ -1437,20 +1776,20 @@
     }
     if (state.screen === 'sudoku') {
       const s = state.sudoku;
-      if (keyCode === KC.KeyFunction1) s.cursor.r = (s.cursor.r - 1 + 9) % 9;
-      else if (keyCode === KC.KeyFunction2) s.cursor.r = (s.cursor.r + 1) % 9;
-      else if (keyCode === KC.PanningLeft) s.cursor.c = (s.cursor.c - 1 + 9) % 9;
-      else if (keyCode === KC.PanningRight) s.cursor.c = (s.cursor.c + 1) % 9;
+      if (keyCode === KC.KeyFunction1) s.cursor.r = (s.cursor.r - 1 + s.N) % s.N;
+      else if (keyCode === KC.KeyFunction2) s.cursor.r = (s.cursor.r + 1) % s.N;
+      else if (keyCode === KC.PanningLeft) s.cursor.c = (s.cursor.c - 1 + s.N) % s.N;
+      else if (keyCode === KC.PanningRight) s.cursor.c = (s.cursor.c + 1) % s.N;
       else if (keyCode === KC.KeyFunction3) {
-        // Cycle digit at cursor
         if (!s.given[s.cursor.r][s.cursor.c]) {
-          s.grid[s.cursor.r][s.cursor.c] = (s.grid[s.cursor.r][s.cursor.c] + 1) % 10;
+          s.grid[s.cursor.r][s.cursor.c] = (s.grid[s.cursor.r][s.cursor.c] + 1) % (s.N + 1);
         }
       } else if (keyCode === KC.KeyFunction4) {
         sudokuCheck(); return;
       }
       render();
-      speak('Row ' + (s.cursor.r+1) + ' col ' + (s.cursor.c+1) + ': ' + (s.grid[s.cursor.r][s.cursor.c] || 'empty'));
+      const cell_v = s.grid[s.cursor.r][s.cursor.c];
+      speak('Row ' + (s.cursor.r+1) + ' col ' + (s.cursor.c+1) + ': ' + (cell_v || 'empty'));
     } else if (state.screen === 'minesweeper') {
       const s = state.minesweeper;
       if (keyCode === KC.KeyFunction1) s.cursor.r = (s.cursor.r - 1 + s.N) % s.N;
@@ -1563,11 +1902,14 @@
       else if (e.key === 'ArrowRight') { e.preventDefault(); mazeMove(0, 1); }
     } else if (state.screen === 'sudoku' && !e.target.matches('input, textarea')) {
       const s = state.sudoku;
-      if (e.key === 'ArrowUp') { e.preventDefault(); s.cursor.r = (s.cursor.r - 1 + 9) % 9; render(); }
-      else if (e.key === 'ArrowDown') { e.preventDefault(); s.cursor.r = (s.cursor.r + 1) % 9; render(); }
-      else if (e.key === 'ArrowLeft') { e.preventDefault(); s.cursor.c = (s.cursor.c - 1 + 9) % 9; render(); }
-      else if (e.key === 'ArrowRight') { e.preventDefault(); s.cursor.c = (s.cursor.c + 1) % 9; render(); }
-      else if (/^[0-9]$/.test(e.key)) sudokuInput(parseInt(e.key));
+      if (e.key === 'ArrowUp') { e.preventDefault(); s.cursor.r = (s.cursor.r - 1 + s.N) % s.N; render(); }
+      else if (e.key === 'ArrowDown') { e.preventDefault(); s.cursor.r = (s.cursor.r + 1) % s.N; render(); }
+      else if (e.key === 'ArrowLeft') { e.preventDefault(); s.cursor.c = (s.cursor.c - 1 + s.N) % s.N; render(); }
+      else if (e.key === 'ArrowRight') { e.preventDefault(); s.cursor.c = (s.cursor.c + 1) % s.N; render(); }
+      else if (/^[0-9]$/.test(e.key)) {
+        const n = parseInt(e.key);
+        if (n <= s.N) sudokuInput(n);
+      }
     } else if ((state.screen === 'minesweeper' || state.screen === 'nonogram') && !e.target.matches('input, textarea')) {
       const s = state.screen === 'minesweeper' ? state.minesweeper : state.nonogram;
       if (e.key === 'ArrowUp') { e.preventDefault(); s.cursor.r = (s.cursor.r - 1 + s.N) % s.N; render(); }
