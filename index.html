@@ -45,26 +45,61 @@
       padding: 24px 12px;
       -webkit-font-smoothing: antialiased;
     }
-    /* iPhone frame */
+    /* iPhone 15 frame — titanium bezel + Dynamic Island + side buttons */
+    .iphone-shell {
+      position: relative;
+      filter: drop-shadow(0 24px 48px rgba(0,0,0,0.25));
+    }
     .iphone {
-      width: 380px; max-width: 100%;
+      width: 388px; max-width: 100%;
       height: 820px; max-height: 95vh;
       background: var(--bg-app);
-      border-radius: 44px;
-      border: 12px solid #1a1c20;
-      box-shadow: 0 30px 80px rgba(0,0,0,0.18), 0 0 0 1px rgba(0,0,0,0.04);
-      overflow: hidden; position: relative;
+      border-radius: 56px;
+      padding: 11px;
+      background: linear-gradient(135deg, #2a2c30 0%, #1a1c20 30%, #0d0e10 50%, #1a1c20 70%, #2a2c30 100%);
+      position: relative;
+      box-shadow:
+        inset 0 0 0 1.5px rgba(255,255,255,0.08),
+        inset 0 0 0 3px rgba(0,0,0,0.4);
       transform: translateZ(0);
     }
-    .notch {
-      position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
-      width: 110px; height: 28px; background: #0a0b0e;
-      border-radius: 0 0 18px 18px; z-index: 100;
+    .iphone-inner {
+      width: 100%; height: 100%;
+      background: var(--bg-app);
+      border-radius: 45px;
+      overflow: hidden;
+      position: relative;
+      box-shadow: inset 0 0 0 2px rgba(0,0,0,0.4);
     }
+    /* Dynamic Island */
+    .dynamic-island {
+      position: absolute; top: 21px; left: 50%; transform: translateX(-50%);
+      width: 118px; height: 34px;
+      background: #050505;
+      border-radius: 999px;
+      z-index: 100;
+      box-shadow: inset 0 1px 2px rgba(255,255,255,0.05);
+    }
+    .dynamic-island::after {
+      content: ''; position: absolute;
+      right: 10px; top: 50%; transform: translateY(-50%);
+      width: 8px; height: 8px; border-radius: 50%;
+      background: radial-gradient(circle at 30% 30%, #2a4a8e, #0a0e1a);
+      box-shadow: inset 0 0 2px rgba(80,140,200,0.6);
+    }
+    /* Side buttons */
+    .iphone-side {
+      position: absolute; background: #1a1c20;
+      box-shadow: inset 0 1px 1px rgba(255,255,255,0.1), inset 0 -1px 1px rgba(0,0,0,0.3);
+    }
+    .side-action { left: -2px; top: 122px; width: 4px; height: 32px; border-radius: 1.5px 0 0 1.5px; }
+    .side-volup { left: -2px; top: 178px; width: 4px; height: 52px; border-radius: 1.5px 0 0 1.5px; }
+    .side-voldn { left: -2px; top: 244px; width: 4px; height: 52px; border-radius: 1.5px 0 0 1.5px; }
+    .side-power { right: -2px; top: 192px; width: 4px; height: 78px; border-radius: 0 1.5px 1.5px 0; }
     .app {
       width: 100%; height: 100%;
       display: flex; flex-direction: column;
-      padding: 50px 20px 22px;
+      padding: 70px 20px 22px;
       overflow-y: auto; overflow-x: hidden;
       background: var(--bg-app);
     }
@@ -151,7 +186,9 @@
       width: 56px; height: 56px; flex-shrink: 0;
       border-radius: 16px;
       display: flex; justify-content: center; align-items: center;
+      padding: 8px;
     }
+    .game-card-swatch svg { width: 100%; height: 100%; display: block; }
     .swatch-sudoku { background: var(--c-sudoku-soft); }
     .swatch-mine { background: var(--c-mine-soft); }
     .swatch-nono { background: var(--c-nono-soft); }
@@ -456,14 +493,18 @@
   </style>
 </head>
 <body>
+  <div class="iphone-shell">
   <div class="iphone">
-    <div class="notch"></div>
+    <div class="iphone-side side-action"></div>
+    <div class="iphone-side side-volup"></div>
+    <div class="iphone-side side-voldn"></div>
+    <div class="iphone-side side-power"></div>
+    <div class="iphone-inner">
+    <div class="dynamic-island"></div>
     <div class="app" id="app">
-      <!-- 헤더는 동적 -->
       <div id="screen"></div>
     </div>
 
-    <!-- Dot Pad 연결 모달 -->
     <div class="overlay" id="dp-overlay">
       <div class="modal">
         <h3>🔌 CONNECT DOT PAD</h3>
@@ -477,6 +518,8 @@
         </p>
       </div>
     </div>
+    </div>
+  </div>
   </div>
 
   <div id="toast"></div>
@@ -612,7 +655,16 @@
       <div class="launcher-section-label">CHOOSE A PUZZLE</div>
 
       <button class="game-card" onclick="startGame('sudoku')">
-        <div class="game-card-swatch swatch-sudoku"><div class="swatch-dot"></div></div>
+        <div class="game-card-swatch swatch-sudoku"><svg viewBox="0 0 36 36" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <rect x="3" y="3" width="30" height="30" rx="2" fill="none" stroke="#0a0a0a" stroke-width="2.2"/>
+  <line x1="13" y1="3" x2="13" y2="33" stroke="#0a0a0a" stroke-width="1.5"/>
+  <line x1="23" y1="3" x2="23" y2="33" stroke="#0a0a0a" stroke-width="1.5"/>
+  <line x1="3" y1="13" x2="33" y2="13" stroke="#0a0a0a" stroke-width="1.5"/>
+  <line x1="3" y1="23" x2="33" y2="23" stroke="#0a0a0a" stroke-width="1.5"/>
+  <circle cx="8" cy="8" r="1.6" fill="#0a0a0a"/>
+  <circle cx="28" cy="18" r="1.6" fill="#0a0a0a"/>
+  <circle cx="18" cy="28" r="1.6" fill="#0a0a0a"/>
+</svg></div>
         <div class="game-card-body">
           <div class="game-card-title">Sudoku</div>
           <div class="game-card-sub">9 × 9 · Fill rows, columns, and 3×3 boxes with 1-9.</div>
@@ -621,7 +673,19 @@
       </button>
 
       <button class="game-card" onclick="startGame('minesweeper')">
-        <div class="game-card-swatch swatch-mine"><div class="swatch-dot"></div></div>
+        <div class="game-card-swatch swatch-mine"><svg viewBox="0 0 36 36" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <circle cx="18" cy="20" r="10" fill="#0a0a0a"/>
+  <rect x="16.5" y="6" width="3" height="6" fill="#0a0a0a"/>
+  <circle cx="18" cy="5.5" r="2.2" fill="#0a0a0a"/>
+  <line x1="18" y1="20" x2="18" y2="5" stroke="none"/>
+  <circle cx="14" cy="17" r="1.3" fill="#fde0e3"/>
+  <line x1="6" y1="20" x2="11" y2="20" stroke="#0a0a0a" stroke-width="1.6" stroke-linecap="round"/>
+  <line x1="25" y1="20" x2="30" y2="20" stroke="#0a0a0a" stroke-width="1.6" stroke-linecap="round"/>
+  <line x1="11" y1="13" x2="8" y2="10" stroke="#0a0a0a" stroke-width="1.6" stroke-linecap="round"/>
+  <line x1="25" y1="13" x2="28" y2="10" stroke="#0a0a0a" stroke-width="1.6" stroke-linecap="round"/>
+  <line x1="11" y1="27" x2="8" y2="30" stroke="#0a0a0a" stroke-width="1.6" stroke-linecap="round"/>
+  <line x1="25" y1="27" x2="28" y2="30" stroke="#0a0a0a" stroke-width="1.6" stroke-linecap="round"/>
+</svg></div>
         <div class="game-card-body">
           <div class="game-card-title">Minesweeper</div>
           <div class="game-card-sub">9 × 9 · Reveal safe cells. Numbers count adjacent mines.</div>
@@ -630,7 +694,28 @@
       </button>
 
       <button class="game-card" onclick="startGame('nonogram')">
-        <div class="game-card-swatch swatch-nono"><div class="swatch-dot"></div></div>
+        <div class="game-card-swatch swatch-nono"><svg viewBox="0 0 36 36" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <!-- 5x5 grid, filled cells form a heart-ish shape -->
+  <g fill="#0a0a0a">
+    <rect x="9" y="9" width="4.6" height="4.6"/>
+    <rect x="14.7" y="9" width="4.6" height="4.6"/>
+    <rect x="22.4" y="9" width="4.6" height="4.6"/>
+    <rect x="6" y="14.7" width="4.6" height="4.6"/>
+    <rect x="14.7" y="14.7" width="4.6" height="4.6"/>
+    <rect x="22.4" y="14.7" width="4.6" height="4.6"/>
+    <rect x="6" y="20.4" width="4.6" height="4.6"/>
+    <rect x="14.7" y="20.4" width="4.6" height="4.6"/>
+    <rect x="9" y="26.1" width="4.6" height="4.6"/>
+  </g>
+  <!-- hint marks on top/left -->
+  <g fill="#0a0a0a" font-family="monospace" font-size="3.4" font-weight="700">
+    <text x="9" y="6.4">3</text>
+    <text x="14.7" y="6.4">2</text>
+    <text x="22.4" y="6.4">2</text>
+    <text x="2.5" y="11.5">2</text>
+    <text x="2.5" y="17.2">3</text>
+  </g>
+</svg></div>
         <div class="game-card-body">
           <div class="game-card-title">Nonogram</div>
           <div class="game-card-sub">10 × 10 · Use row/column hints to reveal the picture.</div>
@@ -639,7 +724,24 @@
       </button>
 
       <button class="game-card" onclick="startGame('maze')">
-        <div class="game-card-swatch swatch-maze"><div class="swatch-dot"></div></div>
+        <div class="game-card-swatch swatch-maze"><svg viewBox="0 0 36 36" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <rect x="3" y="3" width="30" height="30" rx="2" fill="none" stroke="#0a0a0a" stroke-width="2"/>
+  <!-- Walls -->
+  <g stroke="#0a0a0a" stroke-width="2" stroke-linecap="square" fill="none">
+    <line x1="9" y1="3" x2="9" y2="15"/>
+    <line x1="15" y1="9" x2="15" y2="21"/>
+    <line x1="21" y1="3" x2="21" y2="9"/>
+    <line x1="27" y1="9" x2="27" y2="27"/>
+    <line x1="3" y1="21" x2="9" y2="21"/>
+    <line x1="9" y1="27" x2="21" y2="27"/>
+    <line x1="15" y1="15" x2="27" y2="15"/>
+    <line x1="21" y1="21" x2="27" y2="21"/>
+  </g>
+  <!-- Start dot -->
+  <circle cx="6" cy="6" r="2" fill="#0a0a0a"/>
+  <!-- Goal flag -->
+  <circle cx="30" cy="30" r="2.4" fill="#0a0a0a"/>
+</svg></div>
         <div class="game-card-body">
           <div class="game-card-title">Maze</div>
           <div class="game-card-sub">15 × 15 · Navigate from start to goal. Pan keys steer.</div>
