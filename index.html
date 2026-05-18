@@ -147,8 +147,8 @@
     }
     .launcher-hero-dots svg { width: 100%; height: 100%; }
     .launcher-eyebrow {
-      font-size: 10px; letter-spacing: 0.18em; color: var(--fg-soft);
-      font-weight: 700; margin-bottom: 8px;
+      font-size: 11px; letter-spacing: 0.18em; color: var(--fg-soft);
+      font-weight: 700; margin-bottom: 10px;
     }
     .launcher-title {
       font-size: 30px; font-weight: 800; letter-spacing: -0.02em;
@@ -158,95 +158,137 @@
     @media (min-width: 640px) { .launcher-title { font-size: 42px; } }
     @media (min-width: 1024px) { .launcher-title { font-size: 56px; } }
     .launcher-sub {
-      font-size: 13px; color: var(--fg-soft); line-height: 1.5;
-      max-width: 75%;
+      font-size: 15px; color: var(--fg-soft); line-height: 1.55;
+      max-width: 80%;
+    }
+    @media (min-width: 640px) {
+      .launcher-sub { font-size: 16px; }
     }
     .launcher-section-label {
-      font-size: 10px; letter-spacing: 0.18em; color: var(--fg-dim);
-      font-weight: 700; margin: 10px 4px 10px;
+      font-size: 11px; letter-spacing: 0.18em; color: var(--fg-dim);
+      font-weight: 700; margin: 14px 4px 12px;
     }
 
-    /* Game card list — 반응형 그리드 */
+    /* Game card list — 단일 컬럼, 카드 가로 길게 */
     .game-cards-wrap {
-      display: grid; grid-template-columns: 1fr; gap: 10px;
-      margin-bottom: 20px;
+      display: flex; flex-direction: column; gap: 12px;
+      margin-bottom: 24px;
     }
-    @media (min-width: 720px) {
-      .game-cards-wrap { grid-template-columns: 1fr 1fr; gap: 12px; }
-    }
-    /* Game card — Heap-style with colored swatch + check */
+    /* Game card — wide horizontal layout */
     .game-card {
       width: 100%;
-      background: var(--bg-card); border: 1px solid var(--line);
-      padding: 16px; margin-bottom: 10px;
-      cursor: pointer; transition: all 0.15s;
+      background: var(--bg-card); border: 1.5px solid var(--line);
+      padding: 18px 18px 18px 20px;
+      cursor: pointer; transition: all 0.18s ease;
       text-align: left;
-      border-radius: 20px;
-      display: flex; gap: 14px; align-items: center;
+      border-radius: 22px;
+      display: flex; gap: 18px; align-items: center;
       font-family: inherit;
+      position: relative;
+      outline: none;
     }
-    .game-card:hover { border-color: var(--fg-faint); transform: translateY(-1px); box-shadow: 0 6px 20px rgba(0,0,0,0.04); }
+    .game-card:hover {
+      border-color: var(--fg-faint);
+      transform: translateY(-1px);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.06);
+    }
+    .game-card:focus-visible {
+      border-color: var(--dot);
+      box-shadow: 0 0 0 3px rgba(0,0,0,0.12);
+    }
     .game-card.dotpad-focus { border-color: var(--dot); box-shadow: 0 0 0 3px rgba(0,0,0,0.08); }
+
     .game-card-swatch {
-      width: 56px; height: 56px; flex-shrink: 0;
-      border-radius: 16px;
+      width: 64px; height: 64px; flex-shrink: 0;
+      border-radius: 18px;
       display: flex; justify-content: center; align-items: center;
-      padding: 8px;
+      padding: 10px;
     }
     .game-card-swatch svg { width: 100%; height: 100%; display: block; }
     .swatch-sudoku { background: var(--c-sudoku-soft); }
     .swatch-mine { background: var(--c-mine-soft); }
     .swatch-nono { background: var(--c-nono-soft); }
     .swatch-maze { background: var(--c-maze-soft); }
-    .swatch-dot { width: 22px; height: 22px; border-radius: 50%; background: var(--dot); position: relative; }
-    .swatch-dot::before, .swatch-dot::after {
-      content: ''; position: absolute; width: 10px; height: 10px; border-radius: 50%; background: var(--dot);
-    }
-    .swatch-dot.cluster::before { left: -14px; top: 6px; }
-    .swatch-dot.cluster::after { right: -14px; top: 6px; }
+
     .game-card-body { flex: 1; min-width: 0; }
     .game-card-title {
-      font-size: 15px; font-weight: 700; color: var(--fg);
-      margin-bottom: 4px;
-      letter-spacing: -0.01em;
+      font-size: 18px; font-weight: 800; color: var(--fg);
+      margin-bottom: 6px;
+      letter-spacing: -0.015em;
+      line-height: 1.2;
     }
     .game-card-sub {
-      font-size: 12px; color: var(--fg-dim); line-height: 1.45;
+      font-size: 14px; color: var(--fg-soft); line-height: 1.5;
+      letter-spacing: -0.005em;
+    }
+
+    /* Meta column — chip + arrow stacked on right */
+    .game-card-meta {
+      display: flex; flex-direction: column; align-items: flex-end;
+      gap: 10px; flex-shrink: 0;
     }
     .game-card-arrow {
-      width: 28px; height: 28px; border-radius: 50%;
+      width: 36px; height: 36px; border-radius: 50%;
       background: var(--bg-soft); color: var(--fg);
       display: flex; justify-content: center; align-items: center;
-      font-size: 14px; flex-shrink: 0;
+      font-size: 18px; flex-shrink: 0; font-weight: 600;
+      transition: all 0.18s;
     }
-    /* Difficulty chip */
+    .game-card:hover .game-card-arrow {
+      background: var(--accent); color: var(--bg-card);
+      transform: translateX(2px);
+    }
+
+    /* Difficulty chip — 키 차별화 + 더 큰 폰트 */
     .diff-chip {
-      display: inline-flex; align-items: center; gap: 4px;
+      display: inline-flex; align-items: center; gap: 6px;
       background: var(--bg-soft); border: 1px solid var(--line);
-      color: var(--fg); font-size: 10px; font-weight: 700;
-      padding: 4px 10px; border-radius: 999px;
-      cursor: pointer; font-family: inherit; letter-spacing: 0.06em;
-      margin-top: 6px; transition: all 0.15s;
+      color: var(--fg); font-size: 12px; font-weight: 700;
+      padding: 6px 12px; border-radius: 999px;
+      cursor: pointer; font-family: inherit; letter-spacing: 0.02em;
+      transition: all 0.15s;
+      line-height: 1;
+      white-space: nowrap;
     }
-    .diff-chip:hover { background: var(--bg-card); border-color: var(--fg-faint); }
-    .diff-chip .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--dot); }
-    .diff-chip[data-level="easy"] .dot { background: #67b87b; }
-    .diff-chip[data-level="medium"] .dot { background: #f5c957; }
-    .diff-chip[data-level="hard"] .dot { background: #d04848; }
-    /* Helper tools bar (per-game) */
+    .diff-chip:hover { background: var(--bg-card); border-color: var(--fg-dim); transform: translateY(-1px); }
+    .diff-chip:focus-visible { outline: 2px solid var(--dot); outline-offset: 2px; }
+    .diff-chip .dot {
+      width: 8px; height: 8px; border-radius: 50%; background: var(--dot);
+      flex-shrink: 0;
+    }
+    .diff-chip .lbl { font-weight: 700; }
+    .diff-chip .hint {
+      font-size: 10px; color: var(--fg-dim); font-weight: 500;
+      letter-spacing: 0.04em;
+    }
+    .diff-chip[data-level="easy"] .dot { background: #67b87b; box-shadow: 0 0 0 2px rgba(103,184,123,0.18); }
+    .diff-chip[data-level="medium"] .dot { background: #f5c957; box-shadow: 0 0 0 2px rgba(245,201,87,0.22); }
+    .diff-chip[data-level="hard"] .dot { background: #d04848; box-shadow: 0 0 0 2px rgba(208,72,72,0.18); }
+
+    @media (max-width: 480px) {
+      .game-card { padding: 14px 14px 14px 16px; gap: 12px; border-radius: 18px; }
+      .game-card-swatch { width: 52px; height: 52px; padding: 8px; border-radius: 14px; }
+      .game-card-title { font-size: 16px; }
+      .game-card-sub { font-size: 13px; }
+      .game-card-meta { gap: 6px; }
+      .game-card-arrow { width: 30px; height: 30px; font-size: 15px; }
+      .diff-chip .hint { display: none; }
+    }
+
+    /* Helper tools bar (per-game) — 폰트 키움 */
     .tools-bar {
-      display: flex; gap: 6px; flex-wrap: wrap;
-      margin-bottom: 12px;
+      display: flex; gap: 8px; flex-wrap: wrap;
+      margin-bottom: 14px;
     }
     .tool-btn {
       background: var(--bg-card); border: 1px solid var(--line);
-      color: var(--fg); font-size: 11px; font-weight: 600;
-      padding: 7px 12px; border-radius: 999px;
+      color: var(--fg); font-size: 13px; font-weight: 600;
+      padding: 9px 14px; border-radius: 999px;
       cursor: pointer; font-family: inherit;
       transition: all 0.15s;
     }
     .tool-btn:hover { background: var(--bg-soft); border-color: var(--fg-faint); }
-    .tool-btn .ico { display: inline-block; margin-right: 4px; }
+    .tool-btn .ico { display: inline-block; margin-right: 5px; }
 
     /* Game header */
     .game-head {
@@ -261,16 +303,17 @@
       margin-bottom: 6px;
     }
     .game-eyebrow {
-      font-size: 10px; letter-spacing: 0.15em; color: var(--fg-soft);
+      font-size: 11px; letter-spacing: 0.15em; color: var(--fg-soft);
       font-weight: 700;
     }
     .game-title {
-      font-size: 19px; font-weight: 800; color: var(--fg);
+      font-size: 22px; font-weight: 800; color: var(--fg);
       letter-spacing: -0.01em; line-height: 1.2;
     }
+    @media (min-width: 640px) { .game-title { font-size: 26px; } }
     .game-sub {
-      font-size: 12px; color: var(--fg-soft);
-      line-height: 1.45;
+      font-size: 14px; color: var(--fg-soft);
+      line-height: 1.5;
     }
 
     /* Sudoku */
@@ -426,7 +469,7 @@
     }
     .primary-btn {
       background: var(--fg); color: white; border: none;
-      padding: 14px 22px; font-size: 14px; font-weight: 700;
+      padding: 15px 24px; font-size: 15px; font-weight: 700;
       cursor: pointer; font-family: inherit; letter-spacing: 0.02em;
       flex: 1; min-width: 130px;
       border-radius: 999px;
@@ -437,7 +480,7 @@
     .ghost-btn {
       background: var(--bg-card); color: var(--fg);
       border: 1px solid var(--line);
-      padding: 14px 22px; font-size: 13px; font-weight: 600;
+      padding: 14px 22px; font-size: 14px; font-weight: 600;
       cursor: pointer; font-family: inherit;
       border-radius: 999px;
       transition: all 0.15s;
@@ -553,10 +596,10 @@
 
     /* Key hints */
     .key-hints {
-      background: var(--bg-card); padding: 10px 14px;
-      font-size: 11px; color: var(--fg-soft);
-      letter-spacing: 0; line-height: 1.55;
-      margin-bottom: 12px; border: 1px solid var(--line);
+      background: var(--bg-card); padding: 12px 16px;
+      font-size: 13px; color: var(--fg-soft);
+      letter-spacing: 0; line-height: 1.6;
+      margin-bottom: 14px; border: 1px solid var(--line);
       border-radius: 14px;
     }
     .key-hints b { color: var(--fg); font-weight: 700; }
@@ -869,7 +912,7 @@
 
       <div class="game-cards-wrap">
 
-      <button class="game-card" onclick="startGame('sudoku')">
+      <div class="game-card" role="button" tabindex="0" onclick="startGame('sudoku')" onkeydown="cardKey(event,'sudoku')">
         <div class="game-card-swatch swatch-sudoku"><svg viewBox="0 0 36 36" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
   <rect x="3" y="3" width="30" height="30" rx="2" fill="none" stroke="#0a0a0a" stroke-width="2.2"/>
   <line x1="13" y1="3" x2="13" y2="33" stroke="#0a0a0a" stroke-width="1.5"/>
@@ -883,14 +926,17 @@
         <div class="game-card-body">
           <div class="game-card-title">Sudoku</div>
           <div class="game-card-sub" id="sudoku-sub">${getSudokuSub()}</div>
-          <button type="button" class="diff-chip" data-level="${state.difficulty.sudoku}" onclick="event.stopPropagation();cycleDifficulty('sudoku')">
-            <span class="dot"></span>${DIFF_LABEL[state.difficulty.sudoku]} · tap to change
-          </button>
         </div>
-        <div class="game-card-arrow">→</div>
-      </button>
+        <div class="game-card-meta">
+          <button type="button" class="diff-chip" data-level="${state.difficulty.sudoku}" onclick="event.stopPropagation();cycleDifficulty('sudoku')" aria-label="Change difficulty">
+            <span class="dot"></span><span class="lbl">${DIFF_LABEL[state.difficulty.sudoku]}</span>
+            <span class="hint">tap to change</span>
+          </button>
+          <div class="game-card-arrow" aria-hidden="true">→</div>
+        </div>
+      </div>
 
-      <button class="game-card" onclick="startGame('minesweeper')">
+      <div class="game-card" role="button" tabindex="0" onclick="startGame('minesweeper')" onkeydown="cardKey(event,'minesweeper')">
         <div class="game-card-swatch swatch-mine"><svg viewBox="0 0 36 36" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
   <circle cx="18" cy="20" r="10" fill="#0a0a0a"/>
   <rect x="16.5" y="6" width="3" height="6" fill="#0a0a0a"/>
@@ -907,14 +953,17 @@
         <div class="game-card-body">
           <div class="game-card-title">Minesweeper</div>
           <div class="game-card-sub">${getMsSub()}</div>
-          <button type="button" class="diff-chip" data-level="${state.difficulty.minesweeper}" onclick="event.stopPropagation();cycleDifficulty('minesweeper')">
-            <span class="dot"></span>${DIFF_LABEL[state.difficulty.minesweeper]} · tap to change
-          </button>
         </div>
-        <div class="game-card-arrow">→</div>
-      </button>
+        <div class="game-card-meta">
+          <button type="button" class="diff-chip" data-level="${state.difficulty.minesweeper}" onclick="event.stopPropagation();cycleDifficulty('minesweeper')" aria-label="Change difficulty">
+            <span class="dot"></span><span class="lbl">${DIFF_LABEL[state.difficulty.minesweeper]}</span>
+            <span class="hint">tap to change</span>
+          </button>
+          <div class="game-card-arrow" aria-hidden="true">→</div>
+        </div>
+      </div>
 
-      <button class="game-card" onclick="startGame('nonogram')">
+      <div class="game-card" role="button" tabindex="0" onclick="startGame('nonogram')" onkeydown="cardKey(event,'nonogram')">
         <div class="game-card-swatch swatch-nono"><svg viewBox="0 0 36 36" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
   <!-- 5x5 grid, filled cells form a heart-ish shape -->
   <g fill="#0a0a0a">
@@ -940,14 +989,17 @@
         <div class="game-card-body">
           <div class="game-card-title">Nonogram</div>
           <div class="game-card-sub">${getNonoSub()}</div>
-          <button type="button" class="diff-chip" data-level="${state.difficulty.nonogram}" onclick="event.stopPropagation();cycleDifficulty('nonogram')">
-            <span class="dot"></span>${DIFF_LABEL[state.difficulty.nonogram]} · tap to change
-          </button>
         </div>
-        <div class="game-card-arrow">→</div>
-      </button>
+        <div class="game-card-meta">
+          <button type="button" class="diff-chip" data-level="${state.difficulty.nonogram}" onclick="event.stopPropagation();cycleDifficulty('nonogram')" aria-label="Change difficulty">
+            <span class="dot"></span><span class="lbl">${DIFF_LABEL[state.difficulty.nonogram]}</span>
+            <span class="hint">tap to change</span>
+          </button>
+          <div class="game-card-arrow" aria-hidden="true">→</div>
+        </div>
+      </div>
 
-      <button class="game-card" onclick="startGame('maze')">
+      <div class="game-card" role="button" tabindex="0" onclick="startGame('maze')" onkeydown="cardKey(event,'maze')">
         <div class="game-card-swatch swatch-maze"><svg viewBox="0 0 36 36" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
   <rect x="3" y="3" width="30" height="30" rx="2" fill="none" stroke="#0a0a0a" stroke-width="2"/>
   <!-- Walls -->
@@ -969,12 +1021,15 @@
         <div class="game-card-body">
           <div class="game-card-title">Maze</div>
           <div class="game-card-sub">${getMazeSub()}</div>
-          <button type="button" class="diff-chip" data-level="${state.difficulty.maze}" onclick="event.stopPropagation();cycleDifficulty('maze')">
-            <span class="dot"></span>${DIFF_LABEL[state.difficulty.maze]} · tap to change
-          </button>
         </div>
-        <div class="game-card-arrow">→</div>
-      </button>
+        <div class="game-card-meta">
+          <button type="button" class="diff-chip" data-level="${state.difficulty.maze}" onclick="event.stopPropagation();cycleDifficulty('maze')" aria-label="Change difficulty">
+            <span class="dot"></span><span class="lbl">${DIFF_LABEL[state.difficulty.maze]}</span>
+            <span class="hint">tap to change</span>
+          </button>
+          <div class="game-card-arrow" aria-hidden="true">→</div>
+        </div>
+      </div>
 
       </div>
 
@@ -988,6 +1043,14 @@
       </div>
     `;
   }
+
+  function cardKey(e, gameName) {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      startGame(gameName);
+    }
+  }
+  window.cardKey = cardKey;
 
   function startGame(name) {
     state.screen = name;
