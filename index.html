@@ -37,78 +37,61 @@
     * { box-sizing: border-box; }
     html, body {
       margin: 0; padding: 0;
-      background: #eaeaea;
+      background: var(--bg-app);
       color: var(--fg);
       font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
       min-height: 100vh;
-      display: flex; justify-content: center; align-items: center;
-      padding: 24px 12px;
       -webkit-font-smoothing: antialiased;
     }
-    /* iPhone 15 frame — titanium bezel + Dynamic Island + side buttons */
-    .iphone-shell {
-      position: relative;
-      filter: drop-shadow(0 24px 48px rgba(0,0,0,0.25));
-    }
-    .iphone {
-      width: 388px; max-width: 100%;
-      height: 820px; max-height: 95vh;
+    /* Web app container — responsive */
+    .topbar-sticky {
+      position: sticky; top: 0; z-index: 50;
       background: var(--bg-app);
-      border-radius: 56px;
-      padding: 11px;
-      background: linear-gradient(135deg, #2a2c30 0%, #1a1c20 30%, #0d0e10 50%, #1a1c20 70%, #2a2c30 100%);
-      position: relative;
-      box-shadow:
-        inset 0 0 0 1.5px rgba(255,255,255,0.08),
-        inset 0 0 0 3px rgba(0,0,0,0.4);
-      transform: translateZ(0);
+      border-bottom: 1px solid var(--line);
+      padding: 14px 20px; margin: -32px -20px 24px;
     }
-    .iphone-inner {
-      width: 100%; height: 100%;
-      background: var(--bg-app);
-      border-radius: 45px;
-      overflow: hidden;
-      position: relative;
-      box-shadow: inset 0 0 0 2px rgba(0,0,0,0.4);
+    @media (max-width: 640px) {
+      .topbar-sticky { padding: 12px 16px; margin: -20px -16px 16px; }
     }
-    /* Dynamic Island */
-    .dynamic-island {
-      position: absolute; top: 21px; left: 50%; transform: translateX(-50%);
-      width: 118px; height: 34px;
-      background: #050505;
-      border-radius: 999px;
-      z-index: 100;
-      box-shadow: inset 0 1px 2px rgba(255,255,255,0.05);
+    .layout {
+      display: grid; grid-template-columns: 1fr;
+      gap: 32px; align-items: start;
     }
-    .dynamic-island::after {
-      content: ''; position: absolute;
-      right: 10px; top: 50%; transform: translateY(-50%);
-      width: 8px; height: 8px; border-radius: 50%;
-      background: radial-gradient(circle at 30% 30%, #2a4a8e, #0a0e1a);
-      box-shadow: inset 0 0 2px rgba(80,140,200,0.6);
+    @media (min-width: 1100px) {
+      .layout.with-side { grid-template-columns: minmax(0, 1fr) 360px; }
     }
-    /* Side buttons */
-    .iphone-side {
-      position: absolute; background: #1a1c20;
-      box-shadow: inset 0 1px 1px rgba(255,255,255,0.1), inset 0 -1px 1px rgba(0,0,0,0.3);
-    }
-    .side-action { left: -2px; top: 122px; width: 4px; height: 32px; border-radius: 1.5px 0 0 1.5px; }
-    .side-volup { left: -2px; top: 178px; width: 4px; height: 52px; border-radius: 1.5px 0 0 1.5px; }
-    .side-voldn { left: -2px; top: 244px; width: 4px; height: 52px; border-radius: 1.5px 0 0 1.5px; }
-    .side-power { right: -2px; top: 192px; width: 4px; height: 78px; border-radius: 0 1.5px 1.5px 0; }
     .app {
-      width: 100%; height: 100%;
-      display: flex; flex-direction: column;
-      padding: 70px 20px 22px;
-      overflow-y: auto; overflow-x: hidden;
+      width: 100%;
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 32px 20px 64px;
       background: var(--bg-app);
+    }
+    @media (min-width: 640px) {
+      .app { padding: 40px 32px 80px; }
+    }
+    @media (min-width: 1024px) {
+      .app { max-width: 880px; padding: 48px 40px 96px; }
+    }
+    @media (min-width: 1280px) {
+      .app { max-width: 960px; }
+    }
+    @media (max-width: 400px) {
+      .app { padding: 20px 16px 60px; }
     }
     /* Themed game screens — different accent per game */
-    .app[data-theme="sudoku"] { --accent: var(--c-sudoku); --accent-soft: var(--c-sudoku-soft); }
-    .app[data-theme="minesweeper"] { --accent: var(--c-mine); --accent-soft: var(--c-mine-soft); }
-    .app[data-theme="nonogram"] { --accent: var(--c-nono); --accent-soft: var(--c-nono-soft); }
-    .app[data-theme="maze"] { --accent: var(--c-maze); --accent-soft: var(--c-maze-soft); }
+    body[data-theme="sudoku"], .app[data-theme="sudoku"] { --accent: var(--c-sudoku); --accent-soft: var(--c-sudoku-soft); }
+    body[data-theme="minesweeper"], .app[data-theme="minesweeper"] { --accent: var(--c-mine); --accent-soft: var(--c-mine-soft); }
+    body[data-theme="nonogram"], .app[data-theme="nonogram"] { --accent: var(--c-nono); --accent-soft: var(--c-nono-soft); }
+    body[data-theme="maze"], .app[data-theme="maze"] { --accent: var(--c-maze); --accent-soft: var(--c-maze-soft); }
 
+
+    /* 헤더 — 모바일에서 줄바꿈 가능 */
+    @media (max-width: 480px) {
+      .topbar { flex-wrap: wrap; gap: 6px; }
+      .header-btns { flex-wrap: wrap; }
+      .icon-btn { font-size: 9px; padding: 5px 9px; }
+    }
     /* Top bar */
     .topbar {
       display: flex; justify-content: space-between; align-items: center;
@@ -142,13 +125,25 @@
     .launcher-hero {
       background: var(--c-sudoku-soft);
       border-radius: 28px;
-      padding: 24px 22px;
-      margin-bottom: 18px;
+      padding: 28px 24px;
+      margin-bottom: 20px;
       position: relative; overflow: hidden;
     }
+    @media (min-width: 640px) {
+      .launcher-hero { padding: 40px 36px; border-radius: 32px; }
+    }
+    @media (min-width: 1024px) {
+      .launcher-hero { padding: 56px 48px; }
+    }
     .launcher-hero-dots {
-      position: absolute; right: -30px; bottom: -30px;
-      width: 180px; height: 90px;
+      position: absolute; right: -20px; bottom: -20px;
+      width: 200px; height: 100px;
+    }
+    @media (min-width: 640px) {
+      .launcher-hero-dots { width: 280px; height: 140px; right: -10px; bottom: -10px; }
+    }
+    @media (min-width: 1024px) {
+      .launcher-hero-dots { width: 360px; height: 180px; }
     }
     .launcher-hero-dots svg { width: 100%; height: 100%; }
     .launcher-eyebrow {
@@ -156,10 +151,12 @@
       font-weight: 700; margin-bottom: 8px;
     }
     .launcher-title {
-      font-size: 26px; font-weight: 800; letter-spacing: -0.02em;
-      line-height: 1.15; color: var(--fg);
-      margin: 0 0 8px;
+      font-size: 30px; font-weight: 800; letter-spacing: -0.02em;
+      line-height: 1.1; color: var(--fg);
+      margin: 0 0 10px;
     }
+    @media (min-width: 640px) { .launcher-title { font-size: 42px; } }
+    @media (min-width: 1024px) { .launcher-title { font-size: 56px; } }
     .launcher-sub {
       font-size: 13px; color: var(--fg-soft); line-height: 1.5;
       max-width: 75%;
@@ -169,6 +166,14 @@
       font-weight: 700; margin: 10px 4px 10px;
     }
 
+    /* Game card list — 반응형 그리드 */
+    .game-cards-wrap {
+      display: grid; grid-template-columns: 1fr; gap: 10px;
+      margin-bottom: 20px;
+    }
+    @media (min-width: 720px) {
+      .game-cards-wrap { grid-template-columns: 1fr 1fr; gap: 12px; }
+    }
     /* Game card — Heap-style with colored swatch + check */
     .game-card {
       width: 100%;
@@ -440,6 +445,27 @@
     .ghost-btn:hover { background: var(--bg-soft); border-color: var(--fg-faint); }
     .ghost-btn.dotpad-focus { border-color: var(--dot); }
 
+
+    /* 게임 그리드는 max-width로 데스크탑에서 너무 커지지 않게 */
+    .sudoku-grid, .ms-grid, .maze-grid {
+      max-width: 540px;
+      margin-left: auto; margin-right: auto;
+    }
+    .nono-wrap {
+      max-width: 600px;
+      margin-left: auto; margin-right: auto;
+    }
+    /* 모바일에서 num-pad 좀 더 크게 */
+    @media (max-width: 480px) {
+      .num-pad { max-width: 100%; }
+      .num-btn { padding: 18px 0; font-size: 21px; }
+      .tool-btn { padding: 10px 14px; font-size: 12px; }
+    }
+    /* 데스크탑에서 num-pad 가운데 정렬 */
+    @media (min-width: 640px) {
+      .num-pad { margin-left: auto; margin-right: auto; }
+    }
+
     /* Toast */
     #toast {
       position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
@@ -454,9 +480,10 @@
 
     /* Dot Pad popup */
     .overlay {
-      position: absolute; inset: 0; background: rgba(0,0,0,0.4);
+      position: fixed; inset: 0; background: rgba(0,0,0,0.4);
       display: none; justify-content: center; align-items: center;
       z-index: 200; backdrop-filter: blur(4px);
+      padding: 20px;
     }
     .overlay.active { display: flex; }
     .modal {
@@ -469,34 +496,60 @@
     .modal p { font-size: 12px; color: var(--fg-dim); margin: 0 0 16px; line-height: 1.5; }
     .modal .row { display: flex; gap: 8px; }
 
-    /* Dot Pad preview strip */
+    /* Dot Pad preview — full 30x10 grid */
     .dotpad-preview {
       background: var(--bg-card); border: 1px solid var(--line);
-      padding: 12px; margin-top: 12px;
-      border-radius: 16px;
+      padding: 14px; margin-top: 16px;
+      border-radius: 18px;
+    }
+    @media (min-width: 1024px) {
+      .dotpad-preview { padding: 20px; border-radius: 22px; }
     }
     .dotpad-preview-label {
-      font-size: 9px; color: var(--fg-dim); letter-spacing: 0.18em;
+      font-size: 9px; color: var(--fg-dim); letter-spacing: 0.14em;
       font-weight: 700; margin-bottom: 8px;
     }
     .dotpad-preview-grid {
       display: grid; grid-template-columns: repeat(30, 1fr);
-      gap: 0; aspect-ratio: 3 / 1;
+      gap: 1px;
       background: var(--bg-soft);
       border-radius: 6px; overflow: hidden;
+      padding: 3px;
     }
-    .dp-cell { background: transparent; position: relative; }
-    .dp-cell .dot {
-      position: absolute; width: 30%; height: 20%;
+    .dotpad-preview-grid.full {
+      grid-template-rows: repeat(10, 1fr);
+      aspect-ratio: 30 / 13; /* 30 wide × 10 tall (2x4 dots/cell, but slightly stretched vertically) */
+    }
+    .dp-c {
+      position: relative; background: rgba(0,0,0,0.02);
+      border-radius: 1px;
+    }
+    .dp-d {
+      position: absolute; width: 30%; height: 18%;
       background: var(--fg-faint); border-radius: 50%;
     }
-    .dp-cell .dot.up { background: var(--dot); }
-    .dp-cell .dot.d1 { left: 20%; top: 12%; }
-    .dp-cell .dot.d2 { left: 20%; top: 44%; }
-    .dp-cell .dot.d3 { left: 20%; top: 72%; }
-    .dp-cell .dot.d4 { left: 60%; top: 12%; }
-    .dp-cell .dot.d5 { left: 60%; top: 44%; }
-    .dp-cell .dot.d6 { left: 60%; top: 72%; }
+    .dp-d.up { background: var(--dot); box-shadow: 0 0 1px rgba(0,0,0,0.3); }
+    .dp-d.d1 { left: 18%; top: 6%; }
+    .dp-d.d2 { left: 18%; top: 30%; }
+    .dp-d.d3 { left: 18%; top: 54%; }
+    .dp-d.d7 { left: 18%; top: 78%; }
+    .dp-d.d4 { left: 58%; top: 6%; }
+    .dp-d.d5 { left: 58%; top: 30%; }
+    .dp-d.d6 { left: 58%; top: 54%; }
+    .dp-d.d8 { left: 58%; top: 78%; }
+    /* Text line below (20 cells) */
+    .dotpad-text-line {
+      display: flex; align-items: center; gap: 8px;
+      margin-top: 8px; padding: 8px 10px;
+      background: var(--bg-soft); border-radius: 8px;
+      font-size: 10px; color: var(--fg-soft);
+    }
+    .tl-label {
+      background: var(--fg); color: white;
+      padding: 2px 7px; border-radius: 999px;
+      font-size: 8px; letter-spacing: 0.12em; font-weight: 700;
+    }
+    .tl-content { font-family: 'SF Mono', Menlo, monospace; letter-spacing: 0.05em; }
 
     /* Key hints */
     .key-hints {
@@ -517,33 +570,22 @@
   </style>
 </head>
 <body>
-  <div class="iphone-shell">
-  <div class="iphone">
-    <div class="iphone-side side-action"></div>
-    <div class="iphone-side side-volup"></div>
-    <div class="iphone-side side-voldn"></div>
-    <div class="iphone-side side-power"></div>
-    <div class="iphone-inner">
-    <div class="dynamic-island"></div>
-    <div class="app" id="app">
-      <div id="screen"></div>
-    </div>
-
-    <div class="overlay" id="dp-overlay">
-      <div class="modal">
-        <h3>🔌 CONNECT DOT PAD</h3>
-        <p>Chrome / Edge desktop · HTTPS only. Pair the device near your laptop.</p>
-        <div class="row">
-          <button class="primary-btn" onclick="connectBle()">📶 Bluetooth</button>
-          <button class="primary-btn" onclick="connectUsb()">🔗 USB</button>
-        </div>
-        <p style="margin-top:14px;margin-bottom:0;text-align:right">
-          <button class="ghost-btn" onclick="closeDpOverlay()">Cancel</button>
-        </p>
-      </div>
-    </div>
-    </div>
+  <div class="app" id="app">
+    <div id="screen"></div>
   </div>
+
+  <div class="overlay" id="dp-overlay">
+    <div class="modal">
+      <h3>🔌 CONNECT DOT PAD</h3>
+      <p>Chrome / Edge desktop · HTTPS only. Pair the device near your laptop.</p>
+      <div class="row">
+        <button class="primary-btn" onclick="connectBle()">📶 Bluetooth</button>
+        <button class="primary-btn" onclick="connectUsb()">🔗 USB</button>
+      </div>
+      <p style="margin-top:14px;margin-bottom:0;text-align:right">
+        <button class="ghost-btn" onclick="closeDpOverlay()">Cancel</button>
+      </p>
+    </div>
   </div>
 
   <div id="toast"></div>
@@ -772,6 +814,7 @@
   // ============================================================
   function render() {
     document.getElementById('app').setAttribute('data-theme', state.screen);
+    document.body.setAttribute('data-theme', state.screen);
     if (state.screen === 'launcher') renderLauncher();
     else if (state.screen === 'sudoku') renderSudoku();
     else if (state.screen === 'minesweeper') renderMinesweeper();
@@ -823,6 +866,8 @@
       </div>
 
       <div class="launcher-section-label">CHOOSE A PUZZLE</div>
+
+      <div class="game-cards-wrap">
 
       <button class="game-card" onclick="startGame('sudoku')">
         <div class="game-card-swatch swatch-sudoku"><svg viewBox="0 0 36 36" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -930,6 +975,8 @@
         </div>
         <div class="game-card-arrow">→</div>
       </button>
+
+      </div>
 
       <div class="key-hints" style="margin-top:14px">
         <b>Dot Pad keys</b> — F1/F2 nav · F3 select · F4 mark · Pan L/R · Pan All replay<br/>
@@ -1591,70 +1638,146 @@
   // We'll preview a 30×3 strip (just one row of the puzzle status).
 
   function renderDotpadPreview() {
-    // 30 cells wide, 1 row preview
-    let cells = '';
-    const data = getCurrentDotpadDots(); // 30×3 dots = 90 dots
-    for (let i = 0; i < 30; i++) {
-      const base = i * 3;
-      let dots = '';
-      // Each cell has 6 dots (2 cols × 3 rows). We use 1 col here.
-      for (let d = 0; d < 3; d++) {
-        const up = data[base + d] === 1;
-        dots += `<div class="dot d${d*2+1} ${up?'up':''}"></div>`;
+    // Full 30 × 10 cell preview (2400 dots) — reflects actual graphic output
+    const hex = (state.screen !== 'launcher') ? renderPuzzleAsGraphicHex() : '0'.repeat(600);
+    let cellsHtml = '';
+    for (let i = 0; i < DP_W * DP_H; i++) {
+      const byte = parseInt(hex.substring(i*2, i*2+2), 16) || 0;
+      let dotsHtml = '';
+      // 8 dots per cell — show all 8 (standard 6 + 2 bottom for 8-dot mode)
+      for (let b = 0; b < 8; b++) {
+        const up = (byte >> b) & 1;
+        dotsHtml += `<div class="dp-d d${b+1} ${up?'up':''}"></div>`;
       }
-      cells += `<div class="dp-cell">${dots}</div>`;
+      cellsHtml += `<div class="dp-c">${dotsHtml}</div>`;
     }
+    // Status text line (20 cells)
+    const statusText = (state.screen !== 'launcher') ? renderStatusText() : 'DotPuzzle';
     return `
       <div class="dotpad-preview">
-        <div class="dotpad-preview-label">DOT PAD PREVIEW (${state.dotpadConnected ? 'live' : 'simulated'})</div>
-        <div class="dotpad-preview-grid">${cells}</div>
+        <div class="dotpad-preview-label">DOT PAD PREVIEW · 30 × 10 cells · 2400 pins ${state.dotpadConnected ? '· LIVE' : '· simulated'}</div>
+        <div class="dotpad-preview-grid full">${cellsHtml}</div>
+        <div class="dotpad-text-line"><span class="tl-label">TEXT</span><span class="tl-content">${statusText}</span></div>
       </div>
     `;
   }
 
-  // Get a simple linear "row of dots" representing current puzzle state
-  function getCurrentDotpadDots() {
-    const out = new Array(90).fill(0);
-    if (state.screen === 'sudoku') {
-      const s = state.sudoku;
-      const row = s.grid[s.cursor.r];
-      for (let i = 0; i < s.N; i++) {
-        const v = row[i];
-        if (v) { out[i*3] = 1; out[i*3+1] = 1; out[i*3+2] = 1; }
-        if (i === s.cursor.c) { out[i*3] = 1; out[i*3+2] = 1; }
-      }
-    } else if (state.screen === 'minesweeper') {
-      const s = state.minesweeper;
-      const row = s.grid[s.cursor.r];
-      for (let i = 0; i < s.N; i++) {
-        if (s.revealed[s.cursor.r][i]) {
-          const v = row[i];
-          if (v === -1) { out[i*3] = 1; out[i*3+1] = 1; out[i*3+2] = 1; } // mine
-          else if (v > 0) { out[i*3] = 1; out[i*3+2] = 1; } // numeric
-        } else if (s.flagged[s.cursor.r][i]) {
-          out[i*3+1] = 1;
-        }
-        if (i === s.cursor.c) { out[i*3] = 1; out[i*3+2] = 1; }
-      }
-    } else if (state.screen === 'nonogram') {
-      const s = state.nonogram;
-      const row = s.state[s.cursor.r];
-      for (let i = 0; i < s.N; i++) {
-        if (row[i] === 1) { out[i*3] = 1; out[i*3+1] = 1; out[i*3+2] = 1; }
-        else if (row[i] === 2) { out[i*3+1] = 1; }
-        if (i === s.cursor.c) { out[i*3] = 1; out[i*3+2] = 1; }
-      }
-    } else if (state.screen === 'maze') {
-      const s = state.maze;
-      // Show player row
-      const row = s.grid[s.player.r];
-      for (let i = 0; i < Math.min(30, s.N); i++) {
-        if (row[i] === 1) { out[i*3] = 1; out[i*3+1] = 1; out[i*3+2] = 1; }
-        if (i === s.player.c) { out[i*3] = 1; out[i*3+1] = 1; out[i*3+2] = 1; }
-        if (s.goal.r === s.player.r && i === s.goal.c) { out[i*3+1] = 1; }
+
+
+  // ============================================================
+  // DOT PAD GEOMETRY (v0.4 — full-pad rendering)
+  // 그래픽 영역: 30 cells wide × 10 cells tall = 300 cells × 8 dots = 2400 dots
+  // 텍스트 라인: 20 cells separate (grade-1 ASCII braille)
+  // ============================================================
+  const DP_W = 30, DP_H = 10, DP_TEXT_CELLS = 20;
+
+  // puzzle NxN → cellW × cellH (Dot Pad cells per puzzle cell), with offset to center
+  function dpLayout(N, fillHeight) {
+    // fillHeight=true → stretch vertically too (Nonogram/Sudoku); else proportional
+    const cellW = Math.max(1, Math.min(8, Math.floor(DP_W / N)));
+    let cellH;
+    if (N <= 10) {
+      cellH = Math.max(1, Math.min(cellW, Math.floor(DP_H / N)));
+      // For square-ish puzzles, prefer matching cellH ≤ cellW since Dot Pad cells are taller (2x4)
+    } else {
+      cellH = 1; // viewport mode
+    }
+    const totalW = cellW * N;
+    const totalH = cellH * Math.min(N, DP_H);
+    const offsetX = Math.floor((DP_W - totalW) / 2);
+    const offsetY = Math.floor((DP_H - totalH) / 2);
+    return { cellW, cellH, offsetX, offsetY };
+  }
+
+  // Place a block at cell (col, row) of size (cellW, cellH) using a pattern
+  // pattern can be: number (uniform), or 2D array [dy][dx] of bytes
+  function dpSetBlock(cells, col, row, cellW, cellH, pattern) {
+    for (let dy = 0; dy < cellH; dy++) {
+      for (let dx = 0; dx < cellW; dx++) {
+        const c = col + dx, r = row + dy;
+        if (c < 0 || c >= DP_W || r < 0 || r >= DP_H) continue;
+        let v;
+        if (typeof pattern === 'number') v = pattern;
+        else if (pattern[dy] && pattern[dy][dx] !== undefined) v = pattern[dy][dx];
+        else v = 0;
+        cells[r * DP_W + c] = v & 0xFF;
       }
     }
-    return out;
+  }
+
+  // Outline a block (perimeter dots) — used for cursor
+  function dpOutline(cells, col, row, cellW, cellH, val) {
+    if (cellW <= 1 && cellH <= 1) {
+      // Single cell — set whole cell
+      const c = col, r = row;
+      if (c >= 0 && c < DP_W && r >= 0 && r < DP_H) cells[r * DP_W + c] |= val;
+      return;
+    }
+    // Top + bottom rows
+    for (let dx = 0; dx < cellW; dx++) {
+      const c = col + dx;
+      if (c < 0 || c >= DP_W) continue;
+      if (row >= 0 && row < DP_H) cells[row * DP_W + c] |= 0x09; // dots 1+4 (top)
+      const rb = row + cellH - 1;
+      if (rb >= 0 && rb < DP_H && rb !== row) cells[rb * DP_W + c] |= 0x24; // dots 3+6 (bottom)
+    }
+    // Left + right columns
+    for (let dy = 0; dy < cellH; dy++) {
+      const r = row + dy;
+      if (r < 0 || r >= DP_H) continue;
+      const cl = col;
+      if (cl >= 0 && cl < DP_W) cells[r * DP_W + cl] |= 0x07; // dots 1+2+3 (left col)
+      const cr = col + cellW - 1;
+      if (cr >= 0 && cr < DP_W && cr !== cl) cells[r * DP_W + cr] |= 0x38; // dots 4+5+6 (right col)
+    }
+  }
+
+  // Convert dot-state byte (graphics: 6 bits dot1-6 + 2 extra dots 7-8) to hex string
+  function dpCellsToHex(cells) {
+    let hex = '';
+    for (let i = 0; i < DP_W * DP_H; i++) {
+      hex += (cells[i] & 0xFF).toString(16).padStart(2, '0').toUpperCase();
+    }
+    return hex;
+  }
+
+  // ============================================================
+  // ASCII → Grade-1 braille hex (for 20-cell text line)
+  // ============================================================
+  const BRL_LETTER = {
+    a:0x01, b:0x03, c:0x09, d:0x19, e:0x11, f:0x0B, g:0x1B, h:0x13, i:0x0A, j:0x1A,
+    k:0x05, l:0x07, m:0x0D, n:0x1D, o:0x15, p:0x0F, q:0x1F, r:0x17, s:0x0E, t:0x1E,
+    u:0x25, v:0x27, w:0x3A, x:0x2D, y:0x3D, z:0x35,
+  };
+  const BRL_PUNCT = { ' ':0x00, '.':0x32, ',':0x02, '-':0x24, '/':0x0C, ':':0x12, ';':0x06, '?':0x26, '!':0x16, '=':0x3F };
+  const BRL_NUMERIC_PREFIX = 0x3C;
+  const BRL_CAPITAL_PREFIX = 0x20;
+
+  function asciiToBrailleHex(text, maxCells) {
+    let cells = [];
+    let numericMode = false;
+    for (const ch of text) {
+      if (cells.length >= maxCells) break;
+      if (ch >= '0' && ch <= '9') {
+        if (!numericMode) { cells.push(BRL_NUMERIC_PREFIX); numericMode = true; if (cells.length >= maxCells) break; }
+        const idx = ch === '0' ? 9 : (ch.charCodeAt(0) - 48 - 1);
+        const letter = 'abcdefghij'[idx];
+        cells.push(BRL_LETTER[letter] || 0);
+      } else if (ch >= 'A' && ch <= 'Z') {
+        numericMode = false;
+        cells.push(BRL_CAPITAL_PREFIX); if (cells.length >= maxCells) break;
+        cells.push(BRL_LETTER[ch.toLowerCase()] || 0);
+      } else if (ch >= 'a' && ch <= 'z') {
+        numericMode = false;
+        cells.push(BRL_LETTER[ch] || 0);
+      } else {
+        numericMode = false;
+        cells.push(BRL_PUNCT[ch] !== undefined ? BRL_PUNCT[ch] : 0);
+      }
+    }
+    // Pad to maxCells
+    while (cells.length < maxCells) cells.push(0);
+    return cells.slice(0, maxCells).map(b => b.toString(16).padStart(2, '0').toUpperCase()).join('');
   }
 
   // ============================================================
@@ -1667,92 +1790,171 @@
     const hex = renderPuzzleAsGraphicHex();
     try {
       window.DotPad.sdk.displayGraphicData(hex);
-    } catch(e) {
-      console.warn('[DotPad] push failed:', e);
-    }
+    } catch(e) { console.warn('[DotPad] graphic push failed:', e); }
+    // 20-cell 텍스트 라인 — 현재 상태 압축 표시
+    try {
+      const status = renderStatusText();
+      const txtHex = asciiToBrailleHex(status, DP_TEXT_CELLS);
+      if (window.DotPad.sdk.displayTextData) window.DotPad.sdk.displayTextData(txtHex);
+    } catch(e) { console.warn('[DotPad] text push failed:', e); }
   }
 
-  // Build 30x10 grid hex from current puzzle
-  function renderPuzzleAsGraphicHex() {
-    // 300 cells, each 2 dots wide × 3 dots tall
-    // Each cell encoded as 8-bit (dots 1-6 used; 7-8 ignored)
-    const cells = new Array(300).fill(0);
-    function setCell(col, row, dotsBitmask) {
-      if (col<0||col>=30||row<0||row>=10) return;
-      cells[row*30 + col] = dotsBitmask;
-    }
+  // ============================================================
+  // 텍스트 라인 (20 cells = ~20 chars) status 생성
+  // ============================================================
+  function renderStatusText() {
+    if (state.screen === 'launcher') return 'DotPuzzle';
     if (state.screen === 'sudoku') {
       const s = state.sudoku;
+      const v = s.grid[s.cursor.r][s.cursor.c];
+      return 'R' + (s.cursor.r+1) + 'C' + (s.cursor.c+1) + ' ' + (v || '-');
+    }
+    if (state.screen === 'minesweeper') {
+      const s = state.minesweeper;
+      let st;
+      if (s.revealed[s.cursor.r][s.cursor.c]) {
+        const v = s.grid[s.cursor.r][s.cursor.c];
+        st = v === -1 ? 'mine' : v === 0 ? 'safe' : ('n' + v);
+      } else st = s.flagged[s.cursor.r][s.cursor.c] ? 'flag' : 'hide';
+      return 'R' + (s.cursor.r+1) + 'C' + (s.cursor.c+1) + ' ' + st;
+    }
+    if (state.screen === 'nonogram') {
+      const s = state.nonogram;
+      const v = s.state[s.cursor.r][s.cursor.c];
+      const st = v === 1 ? 'fill' : v === 2 ? 'x' : 'mt';
+      return 'R' + (s.cursor.r+1) + 'C' + (s.cursor.c+1) + ' ' + st;
+    }
+    if (state.screen === 'maze') {
+      const s = state.maze;
+      return 'R' + (s.player.r+1) + 'C' + (s.player.c+1) + (s.won ? ' WIN' : '');
+    }
+    return '';
+  }
+  window.renderStatusText = renderStatusText;
+
+  // Build 30x10 grid hex from current puzzle — FULL PAD utilization
+  // Each puzzle cell expands to (cellW × cellH) Dot Pad cells based on puzzle size
+  function renderPuzzleAsGraphicHex() {
+    const cells = new Array(DP_W * DP_H).fill(0);
+
+    // ─── Sudoku ────────────────────────────────────────────
+    if (state.screen === 'sudoku') {
+      const s = state.sudoku;
+      const L = dpLayout(s.N, true);
+      // Digit-as-blocks: 디지트 n → n칸 dots up
       for (let r=0; r<s.N; r++) for (let c=0; c<s.N; c++) {
         const v = s.grid[r][c];
-        let dots = 0;
+        const col = L.offsetX + c * L.cellW;
+        const row = L.offsetY + r * L.cellH;
+        // Block content
         if (v) {
-          // Simple mapping: dot 1 always up (cell occupied)
-          dots |= 0x01;
-          // Encode digit in dots 2-6 (binary 1-9 in 5 bits not used; just dot count)
-          // Visual: 1 = top, 2 = top+mid, ... 6 = all six. 7,8,9 wrap.
-          const n = Math.min(6, v);
-          for (let i = 0; i < n; i++) dots |= (1 << i);
+          // 채워진 셀: 디지트 = solid block (필드된 정도 표시)
+          // 작은 사이즈 (cellW=3): 디지트 비율로 dot 채움
+          if (L.cellW >= 3 && L.cellH >= 1) {
+            // 좌측: full filled, 우측: 빈 공간
+            for (let dy=0; dy<L.cellH; dy++) for (let dx=0; dx<L.cellW; dx++) {
+              const idx = (row+dy) * DP_W + (col+dx);
+              if (idx >= 0 && idx < cells.length) {
+                // 디지트 n: 셀 좌측에서 n/N 비율만큼 fill
+                const fillRatio = v / s.N;
+                if (dx / L.cellW < fillRatio) cells[idx] = 0xFF;
+                else cells[idx] = 0x00;
+              }
+            }
+          } else {
+            dpSetBlock(cells, col, row, L.cellW, L.cellH, 0xFF);
+          }
         }
+        // 박스 디바이더 — 우/하 박스 경계에 빈 칸 한 줄 권장이지만 공간 제약상 mark만
+        // Cursor highlight: 블록 외곽선
         if (r === s.cursor.r && c === s.cursor.c) {
-          dots |= 0x21; // dots 1 + 6 = bracket
+          dpOutline(cells, col, row, L.cellW, L.cellH, 0xFF);
         }
-        setCell(c + 1, r, dots);
       }
     } else if (state.screen === 'minesweeper') {
       const s = state.minesweeper;
+      const L = dpLayout(s.N, true);
       for (let r=0; r<s.N; r++) for (let c=0; c<s.N; c++) {
-        let dots = 0;
+        const col = L.offsetX + c * L.cellW;
+        const row = L.offsetY + r * L.cellH;
+        let pattern = 0;
         if (s.revealed[r][c]) {
           const v = s.grid[r][c];
-          if (v === -1) dots = 0x3F; // all 6 dots = mine
-          else if (v > 0) {
-            // Use dot count = number
-            const n = Math.min(6, v);
-            for (let i = 0; i < n; i++) dots |= (1 << i);
+          if (v === -1) {
+            // mine = full block (모든 dot up)
+            dpSetBlock(cells, col, row, L.cellW, L.cellH, 0xFF);
+            continue;
+          } else if (v > 0) {
+            // n nearby — dot count fill ratio (1=1/6, 2=2/6, ..., 6=full)
+            const ratio = Math.min(1, v / 6);
+            for (let dy=0; dy<L.cellH; dy++) for (let dx=0; dx<L.cellW; dx++) {
+              const idx = (row+dy) * DP_W + (col+dx);
+              if (dx / L.cellW < ratio) cells[idx] = 0xFF;
+            }
           }
-          // 0 = empty revealed = no dots
+          // safe revealed (v=0) → empty
         } else if (s.flagged[r][c]) {
-          dots = 0x12; // dots 2+5 = flag
+          // flag = X 패턴 (대각선 2개 dot)
+          dpSetBlock(cells, col, row, L.cellW, L.cellH, 0x12); // dots 2+5
         } else {
-          dots = 0x09; // dots 1+4 = covered
+          // hidden = 단일 dot in center (catch but distinguishable from empty)
+          dpSetBlock(cells, col, row, L.cellW, L.cellH, 0x09); // dots 1+4
         }
         if (r === s.cursor.r && c === s.cursor.c) {
-          dots |= 0x21;
+          dpOutline(cells, col, row, L.cellW, L.cellH, 0xFF);
         }
-        setCell(c + 1, r, dots);
       }
     } else if (state.screen === 'nonogram') {
       const s = state.nonogram;
+      const L = dpLayout(s.N, true);
       for (let r=0; r<s.N; r++) for (let c=0; c<s.N; c++) {
-        let dots = 0;
-        if (s.state[r][c] === 1) dots = 0x3F; // filled all 6
-        else if (s.state[r][c] === 2) dots = 0x12; // X marker
-        if (r === s.cursor.r && c === s.cursor.c) dots |= 0x21;
-        setCell(c + 1, r, dots);
+        const col = L.offsetX + c * L.cellW;
+        const row = L.offsetY + r * L.cellH;
+        if (s.state[r][c] === 1) {
+          // filled = solid block (모든 dot up = 가장 강한 촉각)
+          dpSetBlock(cells, col, row, L.cellW, L.cellH, 0xFF);
+        } else if (s.state[r][c] === 2) {
+          // X mark = 대각선 2개 dot
+          dpSetBlock(cells, col, row, L.cellW, L.cellH, 0x12);
+        }
+        // empty = 0 (skip)
+        if (r === s.cursor.r && c === s.cursor.c) {
+          dpOutline(cells, col, row, L.cellW, L.cellH, 0xFF);
+        }
       }
     } else if (state.screen === 'maze') {
       const s = state.maze;
-      // 15x15 maze — fits in 15 cells wide × 10 cells tall (we'll show rows around player)
-      // Center view on player
-      const viewRows = 10;
-      const startR = Math.max(0, Math.min(s.N - viewRows, s.player.r - 5));
-      for (let dr=0; dr<viewRows; dr++) {
-        const r = startR + dr;
+      const L = dpLayout(s.N, true);
+      // For N <= 10: fit whole maze. For N > 10: vertical viewport centered on player
+      const viewportY = (s.N > DP_H / L.cellH);
+      const startR = viewportY
+        ? Math.max(0, Math.min(s.N - Math.floor(DP_H / L.cellH), s.player.r - Math.floor(DP_H / L.cellH / 2)))
+        : 0;
+      const rowsShown = Math.min(s.N, Math.floor(DP_H / L.cellH));
+      for (let dy=0; dy<rowsShown; dy++) {
+        const r = startR + dy;
         if (r >= s.N) break;
-        for (let c=0; c<Math.min(15, s.N); c++) {
-          let dots = 0;
-          if (s.grid[r][c] === 1) dots = 0x3F; // wall = solid
-          if (s.goal.r === r && s.goal.c === c) dots = 0x12; // goal marker
-          if (s.player.r === r && s.player.c === c) dots = 0x36; // player blob
-          setCell(c + 1, dr, dots);
+        for (let c=0; c<s.N; c++) {
+          if (c * L.cellW >= DP_W) break;
+          const col = (viewportY ? Math.max(0, Math.floor((DP_W - L.cellW * s.N) / 2)) : L.offsetX) + c * L.cellW;
+          const row = dy * L.cellH;
+          if (s.grid[r][c] === 1) {
+            // 벽 = solid block
+            dpSetBlock(cells, col, row, L.cellW, L.cellH, 0xFF);
+          }
+          if (s.goal.r === r && s.goal.c === c) {
+            // 골 = X 패턴 (대각선)
+            dpSetBlock(cells, col, row, L.cellW, L.cellH, 0x12);
+          }
+          if (s.player.r === r && s.player.c === c) {
+            // 플레이어 = 솔리드 블록 + outline (강조)
+            dpSetBlock(cells, col, row, L.cellW, L.cellH, 0xFF);
+            dpOutline(cells, col-1, row, L.cellW+2, L.cellH, 0x09);
+          }
         }
       }
     }
-    // Encode to hex
-    let hex = '';
-    for (const d of cells) hex += d.toString(16).padStart(2, '0').toUpperCase();
-    return hex;
+    return dpCellsToHex(cells);
   }
 
   // ============================================================
