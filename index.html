@@ -1,0 +1,1393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DotPuzzle Pack — Daily Tactile Puzzles</title>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+  <link rel="stylesheet" as="style" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+  <style>
+    :root {
+      --bg: #0c0d10;
+      --bg-soft: #14161a;
+      --line: #1c1f26;
+      --line-soft: #1f232b;
+      --fg: #ecedef;
+      --fg-soft: #aeb4bd;
+      --fg-dim: #6c7380;
+      --fg-faint: #3d434d;
+      --accent: #e8c573;
+      --accent-soft: #b89758;
+      --danger: #d97c5c;
+      --ok: #6ea96f;
+      --info: #6c9bd1;
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0; padding: 0;
+      background: #050609;
+      color: var(--fg);
+      font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
+      min-height: 100vh;
+      display: flex; justify-content: center; align-items: center;
+      padding: 24px 12px;
+    }
+    /* iPhone 프레임 */
+    .iphone {
+      width: 380px; max-width: 100%;
+      height: 820px; max-height: 95vh;
+      background: var(--bg);
+      border-radius: 44px;
+      border: 14px solid #1a1c20;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.05);
+      overflow: hidden;
+      position: relative;
+      transform: translateZ(0);
+    }
+    .notch {
+      position: absolute; top: 14px; left: 50%; transform: translateX(-50%);
+      width: 110px; height: 28px; background: #0a0b0e;
+      border-radius: 0 0 18px 18px; z-index: 100;
+    }
+    .app {
+      width: 100%; height: 100%;
+      display: flex; flex-direction: column;
+      padding: 50px 18px 18px;
+      overflow-y: auto;
+      overflow-x: hidden;
+    }
+    /* Header */
+    .topbar {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 14px;
+      gap: 8px;
+    }
+    .brand {
+      font-size: 11px; letter-spacing: 0.15em; color: var(--fg-dim);
+      font-weight: 700;
+    }
+    .brand b { color: var(--accent); }
+    .header-btns { display: flex; gap: 6px; }
+    .icon-btn {
+      background: transparent; border: 1px solid var(--fg-faint);
+      color: var(--fg-soft); font-size: 11px; padding: 5px 9px;
+      cursor: pointer; font-family: inherit; letter-spacing: 0.05em;
+      transition: all 0.15s;
+    }
+    .icon-btn:hover { border-color: var(--fg-dim); color: var(--fg); }
+    .icon-btn.active { border-color: var(--accent); color: var(--accent); }
+    .icon-btn.connected { border-color: var(--ok); color: var(--ok); }
+
+    /* Launcher */
+    .launcher-title {
+      font-size: 24px; font-weight: 800; letter-spacing: -0.02em;
+      margin: 8px 0 4px;
+    }
+    .launcher-title b { color: var(--accent); }
+    .launcher-sub {
+      font-size: 12px; color: var(--fg-dim); margin-bottom: 18px;
+      line-height: 1.5;
+    }
+    .game-card {
+      background: var(--bg-soft); border: 1.5px solid var(--line);
+      padding: 14px 16px; margin-bottom: 10px;
+      cursor: pointer; transition: all 0.15s;
+      text-align: left;
+    }
+    .game-card:hover { border-color: var(--accent); }
+    .game-card.dotpad-focus { border-color: var(--accent); outline: 3px solid var(--accent); outline-offset: 2px; }
+    .game-card-title {
+      font-size: 15px; font-weight: 700; color: var(--fg);
+      margin-bottom: 4px;
+    }
+    .game-card-sub {
+      font-size: 11px; color: var(--fg-dim); line-height: 1.4;
+    }
+    .game-card-icon {
+      display: inline-block; width: 32px; height: 32px;
+      border: 2px solid var(--accent); margin-bottom: 8px;
+      position: relative;
+    }
+    .game-card-icon.sudoku::before, .game-card-icon.sudoku::after {
+      content: ''; position: absolute; background: var(--accent);
+    }
+    .game-card-icon.sudoku::before { left: 33%; top: 0; bottom: 0; width: 1px; }
+    .game-card-icon.sudoku::after { right: 33%; top: 0; bottom: 0; width: 1px; }
+    .game-card-icon.mine { background: var(--accent); }
+    .game-card-icon.mine::before {
+      content: ''; position: absolute; left: 50%; top: 50%;
+      transform: translate(-50%, -50%); width: 4px; height: 4px;
+      background: var(--bg); border-radius: 50%;
+    }
+    .game-card-icon.nono {
+      background-image: linear-gradient(90deg, transparent 45%, var(--accent) 45%, var(--accent) 55%, transparent 55%),
+                        linear-gradient(0deg, transparent 45%, var(--accent) 45%, var(--accent) 55%, transparent 55%);
+    }
+    .game-card-icon.maze::before {
+      content: ''; position: absolute; left: 4px; top: 4px;
+      width: 8px; height: 8px; border: 2px solid var(--accent);
+      box-shadow: 12px 0 0 -1px var(--accent), 0 12px 0 -1px var(--accent);
+    }
+
+    /* Game header */
+    .game-head {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 10px;
+    }
+    .game-title {
+      font-size: 16px; font-weight: 800; color: var(--accent);
+      letter-spacing: 0.05em;
+    }
+    .game-sub {
+      font-size: 11px; color: var(--fg-dim);
+      margin-bottom: 12px;
+    }
+    .back-btn {
+      background: transparent; border: 1px solid var(--fg-faint);
+      color: var(--fg-soft); font-size: 11px; padding: 4px 9px;
+      cursor: pointer; font-family: inherit;
+    }
+    .back-btn:hover { color: var(--fg); border-color: var(--fg-dim); }
+
+    /* Sudoku */
+    .sudoku-grid {
+      display: grid; grid-template-columns: repeat(9, 1fr);
+      gap: 1px; background: var(--fg-faint);
+      border: 2px solid var(--fg-soft);
+      margin-bottom: 12px;
+      aspect-ratio: 1;
+    }
+    .sudoku-cell {
+      background: var(--bg);
+      display: flex; justify-content: center; align-items: center;
+      font-size: 14px; font-weight: 600;
+      cursor: pointer; user-select: none;
+      position: relative;
+    }
+    .sudoku-cell.given { color: var(--fg); background: var(--line-soft); }
+    .sudoku-cell.user { color: var(--accent); }
+    .sudoku-cell.bad { color: var(--danger); }
+    .sudoku-cell.focused { outline: 2px solid var(--accent); outline-offset: -2px; z-index: 2; }
+    .sudoku-cell:nth-child(3n) { border-right: 1px solid var(--fg-soft); }
+    .sudoku-row:nth-child(3n) { border-bottom: 1px solid var(--fg-soft); }
+    /* Box divider via background colors */
+    .sudoku-grid {
+      grid-template-columns: repeat(3, 1fr 1fr 1fr);
+    }
+    .num-pad {
+      display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px;
+      margin-bottom: 10px;
+    }
+    .num-btn {
+      background: var(--bg-soft); border: 1px solid var(--line);
+      color: var(--fg); padding: 10px 0; font-size: 14px; font-weight: 700;
+      cursor: pointer; font-family: inherit;
+    }
+    .num-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .num-btn.dotpad-focus { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+    /* Minesweeper */
+    .ms-grid {
+      display: grid; gap: 1px; background: var(--fg-faint);
+      border: 2px solid var(--fg-soft);
+      margin-bottom: 12px;
+      aspect-ratio: 1;
+    }
+    .ms-cell {
+      background: var(--line-soft);
+      display: flex; justify-content: center; align-items: center;
+      font-size: 11px; font-weight: 700;
+      cursor: pointer; user-select: none;
+    }
+    .ms-cell.revealed { background: var(--bg); color: var(--fg-soft); }
+    .ms-cell.revealed.n1 { color: var(--info); }
+    .ms-cell.revealed.n2 { color: var(--ok); }
+    .ms-cell.revealed.n3 { color: var(--danger); }
+    .ms-cell.revealed.n4 { color: #b88ed6; }
+    .ms-cell.flagged::after { content: '⚑'; color: var(--accent); }
+    .ms-cell.mine::after { content: '✱'; color: var(--danger); }
+    .ms-cell.focused { outline: 2px solid var(--accent); outline-offset: -2px; z-index: 2; }
+    .ms-status {
+      display: flex; justify-content: space-between;
+      font-size: 11px; color: var(--fg-dim); margin-bottom: 8px;
+    }
+    .ms-status b { color: var(--accent); }
+
+    /* Nonogram */
+    .nono-wrap {
+      display: grid; gap: 1px;
+      grid-template-columns: 80px 1fr;
+      margin-bottom: 12px;
+    }
+    .nono-col-hints {
+      grid-column: 2;
+      display: grid; gap: 1px; background: var(--bg);
+    }
+    .nono-row-hints {
+      grid-column: 1; grid-row: 2;
+      display: grid; gap: 1px;
+    }
+    .nono-grid-area {
+      grid-column: 2; grid-row: 2;
+      display: grid; gap: 1px; background: var(--fg-faint);
+      border: 2px solid var(--fg-soft);
+    }
+    .nono-hint-cell {
+      background: var(--bg-soft); padding: 2px 4px;
+      font-size: 9px; color: var(--fg-soft);
+      display: flex; align-items: center; line-height: 1.1;
+      letter-spacing: 0;
+    }
+    .nono-hint-cell.col { flex-direction: column; justify-content: flex-end; text-align: center; }
+    .nono-hint-cell.row { justify-content: flex-end; }
+    .nono-cell {
+      background: var(--bg); cursor: pointer; user-select: none;
+      display: flex; justify-content: center; align-items: center;
+      font-size: 10px; color: var(--fg-dim);
+    }
+    .nono-cell.filled { background: var(--accent); }
+    .nono-cell.x::after { content: '×'; color: var(--fg-faint); font-size: 12px; }
+    .nono-cell.focused { outline: 2px solid var(--accent); outline-offset: -2px; z-index: 2; }
+
+    /* Maze */
+    .maze-grid {
+      display: grid; gap: 0;
+      margin-bottom: 12px;
+      aspect-ratio: 1;
+      border: 2px solid var(--fg-soft);
+      background: var(--bg);
+    }
+    .maze-cell {
+      background: var(--bg); position: relative;
+    }
+    .maze-cell.wall { background: var(--fg-faint); }
+    .maze-cell.player::after {
+      content: ''; position: absolute; inset: 18%;
+      background: var(--accent); border-radius: 50%;
+    }
+    .maze-cell.goal::after {
+      content: ''; position: absolute; inset: 25%;
+      background: var(--ok); transform: rotate(45deg);
+    }
+    .maze-cell.focused { outline: 2px solid var(--accent); outline-offset: -2px; z-index: 2; }
+    .maze-controls {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 4px; margin: 0 auto; width: 180px;
+    }
+    .maze-controls .num-btn { padding: 12px 0; }
+    .maze-controls .empty { background: transparent; border: none; }
+
+    /* Action bar (shared bottom) */
+    .action-bar {
+      display: flex; gap: 6px; flex-wrap: wrap;
+      margin-top: 8px;
+    }
+    .primary-btn {
+      background: var(--accent); color: var(--bg); border: none;
+      padding: 10px 16px; font-size: 13px; font-weight: 700;
+      cursor: pointer; font-family: inherit; letter-spacing: 0.03em;
+      flex: 1; min-width: 120px;
+    }
+    .primary-btn:hover { background: var(--accent-soft); }
+    .primary-btn.dotpad-focus { outline: 3px solid var(--accent); outline-offset: 2px; }
+    .ghost-btn {
+      background: transparent; color: var(--fg-soft);
+      border: 1px solid var(--fg-faint);
+      padding: 10px 14px; font-size: 12px;
+      cursor: pointer; font-family: inherit; letter-spacing: 0.03em;
+    }
+    .ghost-btn:hover { color: var(--fg); border-color: var(--fg-dim); }
+    .ghost-btn.dotpad-focus { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+    /* Status banner */
+    .banner {
+      background: var(--line-soft); border-left: 3px solid var(--accent);
+      padding: 8px 12px; margin-bottom: 10px;
+      font-size: 11px; color: var(--fg-soft); line-height: 1.5;
+    }
+    .banner.ok { border-color: var(--ok); }
+    .banner.err { border-color: var(--danger); }
+
+    /* Dot Pad popup */
+    .overlay {
+      position: absolute; inset: 0; background: rgba(0,0,0,0.7);
+      display: none; justify-content: center; align-items: center;
+      z-index: 200;
+    }
+    .overlay.active { display: flex; }
+    .modal {
+      background: var(--bg); border: 1px solid var(--fg-faint);
+      padding: 22px; width: 90%; max-width: 320px;
+    }
+    .modal h3 { margin: 0 0 6px; font-size: 14px; color: var(--accent); letter-spacing: 0.05em; }
+    .modal p { font-size: 11px; color: var(--fg-dim); margin: 0 0 14px; line-height: 1.5; }
+    .modal .row { display: flex; gap: 6px; }
+
+    /* Toast hint */
+    #toast {
+      position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+      background: var(--accent); color: var(--bg);
+      padding: 8px 16px; font-size: 12px; font-weight: 700;
+      z-index: 9999; opacity: 0; transition: opacity 0.3s;
+      pointer-events: none; letter-spacing: 0.03em;
+    }
+    #toast.show { opacity: 1; }
+
+    /* Live preview of Dot Pad */
+    .dotpad-preview {
+      background: var(--bg-soft); border: 1px solid var(--line);
+      padding: 10px; margin-top: 10px;
+    }
+    .dotpad-preview-label {
+      font-size: 10px; color: var(--fg-dim); letter-spacing: 0.1em;
+      margin-bottom: 6px;
+    }
+    .dotpad-preview-grid {
+      display: grid; grid-template-columns: repeat(30, 1fr);
+      gap: 0; aspect-ratio: 3 / 1;
+      background: #0a0b0e;
+    }
+    .dp-cell {
+      background: var(--bg);
+      border-right: 1px solid #0c0d10;
+      position: relative;
+    }
+    .dp-cell .dot {
+      position: absolute; width: 22%; height: 16%;
+      background: var(--fg-faint); border-radius: 50%;
+    }
+    .dp-cell .dot.up { background: var(--accent); box-shadow: 0 0 4px var(--accent); }
+    .dp-cell .dot.d1 { left: 22%; top: 12%; }
+    .dp-cell .dot.d2 { left: 22%; top: 44%; }
+    .dp-cell .dot.d3 { left: 22%; top: 72%; }
+    .dp-cell .dot.d4 { left: 60%; top: 12%; }
+    .dp-cell .dot.d5 { left: 60%; top: 44%; }
+    .dp-cell .dot.d6 { left: 60%; top: 72%; }
+
+    /* Hints for what each button does */
+    .key-hints {
+      background: var(--bg-soft); padding: 8px 11px;
+      font-size: 10px; color: var(--fg-dim);
+      letter-spacing: 0.02em; line-height: 1.6;
+      margin-bottom: 10px; border: 1px solid var(--line);
+    }
+    .key-hints b { color: var(--accent); }
+  </style>
+</head>
+<body>
+  <div class="iphone">
+    <div class="notch"></div>
+    <div class="app" id="app">
+      <!-- 헤더는 동적 -->
+      <div id="screen"></div>
+    </div>
+
+    <!-- Dot Pad 연결 모달 -->
+    <div class="overlay" id="dp-overlay">
+      <div class="modal">
+        <h3>🔌 CONNECT DOT PAD</h3>
+        <p>Chrome / Edge desktop · HTTPS only. Pair the device near your laptop.</p>
+        <div class="row">
+          <button class="primary-btn" onclick="connectBle()">📶 Bluetooth</button>
+          <button class="primary-btn" onclick="connectUsb()">🔗 USB</button>
+        </div>
+        <p style="margin-top:14px;margin-bottom:0;text-align:right">
+          <button class="ghost-btn" onclick="closeDpOverlay()">Cancel</button>
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast"></div>
+
+  <!-- Dot Pad SDK (Web SDK 3.0.0) -->
+  <script type="module">
+    import * as DotPad from './dotpad-sdk/DotPadSDK-3.0.0.js';
+    window.DotPad = DotPad;
+    console.log('[DotPad] SDK loaded');
+  </script>
+
+  <script>
+  // ============================================================
+  // STATE
+  // ============================================================
+  const state = {
+    screen: 'launcher', // launcher | sudoku | minesweeper | nonogram | maze
+    dotpadConnected: false,
+    dotpadDevice: null,
+    dotpadName: '',
+    dotpadCursor: 0,
+    ttsOn: true,
+    sudoku: null,
+    minesweeper: null,
+    nonogram: null,
+    maze: null,
+  };
+
+  // ============================================================
+  // UTILITIES
+  // ============================================================
+  function $(id) { return document.getElementById(id); }
+  function el(tag, attrs={}, ...children) {
+    const e = document.createElement(tag);
+    for (const k in attrs) {
+      if (k === 'class') e.className = attrs[k];
+      else if (k.startsWith('on')) e[k] = attrs[k];
+      else e.setAttribute(k, attrs[k]);
+    }
+    children.forEach(c => {
+      if (typeof c === 'string') e.appendChild(document.createTextNode(c));
+      else if (c) e.appendChild(c);
+    });
+    return e;
+  }
+  function toast(msg, ms=1500) {
+    const t = $('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(t._h);
+    t._h = setTimeout(() => t.classList.remove('show'), ms);
+  }
+  function speak(text) {
+    if (!state.ttsOn || !window.speechSynthesis) return;
+    try {
+      window.speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      u.rate = 1.05;
+      u.volume = 1;
+      window.speechSynthesis.speak(u);
+    } catch(e){}
+  }
+
+  // ============================================================
+  // HEADER
+  // ============================================================
+  function renderHeader(titleHtml, subText) {
+    return `
+      <div class="topbar">
+        <div class="brand">DOT <b>ARCADE</b></div>
+        <div class="header-btns">
+          <button class="icon-btn ${state.ttsOn?'active':''}" id="tts-btn" onclick="toggleTts()">VOX</button>
+          <button class="icon-btn ${state.dotpadConnected?'connected':''}" id="dp-btn" onclick="openDpOverlay()">${state.dotpadConnected?'● Pad':'Pad'}</button>
+          ${state.screen !== 'launcher' ? `<button class="back-btn" onclick="goLauncher()">◀ Back</button>` : ''}
+        </div>
+      </div>
+      ${titleHtml ? `<div class="game-head"><div class="game-title">${titleHtml}</div></div>` : ''}
+      ${subText ? `<div class="game-sub">${subText}</div>` : ''}
+    `;
+  }
+
+  function toggleTts() {
+    state.ttsOn = !state.ttsOn;
+    if (!state.ttsOn) window.speechSynthesis.cancel();
+    render();
+  }
+
+  function goLauncher() {
+    state.screen = 'launcher';
+    state.dotpadCursor = 0;
+    render();
+  }
+
+  // ============================================================
+  // ROUTER
+  // ============================================================
+  function render() {
+    if (state.screen === 'launcher') renderLauncher();
+    else if (state.screen === 'sudoku') renderSudoku();
+    else if (state.screen === 'minesweeper') renderMinesweeper();
+    else if (state.screen === 'nonogram') renderNonogram();
+    else if (state.screen === 'maze') renderMaze();
+    // Highlight first dotpad item
+    setTimeout(() => {
+      if (state.dotpadConnected) dotpadHighlight();
+      pushToDotpad();
+    }, 50);
+  }
+
+  // ============================================================
+  // LAUNCHER
+  // ============================================================
+  function renderLauncher() {
+    $('screen').innerHTML = `
+      ${renderHeader('', '')}
+      <div class="launcher-title">DOT <b>PUZZLE</b> PACK</div>
+      <div class="launcher-sub">Daily tactile puzzles for Dot Pad.<br/>Grid = perfect tactile mapping.</div>
+
+      <button class="game-card" onclick="startGame('sudoku')">
+        <div class="game-card-icon sudoku"></div>
+        <div class="game-card-title">Sudoku · 9 × 9</div>
+        <div class="game-card-sub">Fill every row, column, and 3×3 box with digits 1 to 9.</div>
+      </button>
+
+      <button class="game-card" onclick="startGame('minesweeper')">
+        <div class="game-card-icon mine"></div>
+        <div class="game-card-title">Minesweeper · 9 × 9</div>
+        <div class="game-card-sub">Reveal safe cells, flag the mines. Numbers count adjacent mines.</div>
+      </button>
+
+      <button class="game-card" onclick="startGame('nonogram')">
+        <div class="game-card-icon nono"></div>
+        <div class="game-card-title">Nonogram · 10 × 10</div>
+        <div class="game-card-sub">Use row and column hints to reveal a hidden picture.</div>
+      </button>
+
+      <button class="game-card" onclick="startGame('maze')">
+        <div class="game-card-icon maze"></div>
+        <div class="game-card-title">Maze · 15 × 15</div>
+        <div class="game-card-sub">Navigate from start to goal. Arrows on screen or F-keys on Pad.</div>
+      </button>
+
+      <div class="key-hints" style="margin-top:14px">
+        <b>Dot Pad keys</b> — F1/F2 move cursor · F3 select · F4 toggle mark · Pan L/R rotate axis · Pan All replay
+      </div>
+    `;
+  }
+
+  function startGame(name) {
+    state.screen = name;
+    state.dotpadCursor = 0;
+    if (name === 'sudoku') initSudoku();
+    if (name === 'minesweeper') initMinesweeper();
+    if (name === 'nonogram') initNonogram();
+    if (name === 'maze') initMaze();
+    render();
+    speak(name + '. ' + (name === 'sudoku' ? 'Fill the grid with one to nine.' :
+      name === 'minesweeper' ? 'Find the mines without revealing them.' :
+      name === 'nonogram' ? 'Use the hints to reveal the picture.' :
+      'Navigate the maze to the goal.'));
+  }
+
+  // ============================================================
+  // SUDOKU
+  // ============================================================
+  // Simple deterministic puzzle (1 seed for demo)
+  const SUDOKU_PUZZLE = [
+    [5,3,0, 0,7,0, 0,0,0],
+    [6,0,0, 1,9,5, 0,0,0],
+    [0,9,8, 0,0,0, 0,6,0],
+    [8,0,0, 0,6,0, 0,0,3],
+    [4,0,0, 8,0,3, 0,0,1],
+    [7,0,0, 0,2,0, 0,0,6],
+    [0,6,0, 0,0,0, 2,8,0],
+    [0,0,0, 4,1,9, 0,0,5],
+    [0,0,0, 0,8,0, 0,7,9],
+  ];
+  const SUDOKU_SOLUTION = [
+    [5,3,4, 6,7,8, 9,1,2],
+    [6,7,2, 1,9,5, 3,4,8],
+    [1,9,8, 3,4,2, 5,6,7],
+    [8,5,9, 7,6,1, 4,2,3],
+    [4,2,6, 8,5,3, 7,9,1],
+    [7,1,3, 9,2,4, 8,5,6],
+    [9,6,1, 5,3,7, 2,8,4],
+    [2,8,7, 4,1,9, 6,3,5],
+    [3,4,5, 2,8,6, 1,7,9],
+  ];
+
+  function initSudoku() {
+    if (state.sudoku) return;
+    state.sudoku = {
+      grid: SUDOKU_PUZZLE.map(r => r.slice()),
+      given: SUDOKU_PUZZLE.map(r => r.map(v => v !== 0)),
+      cursor: { r: 0, c: 0 },
+      mode: 'cell', // cell | num-pad
+      numCursor: 0,
+    };
+  }
+
+  function renderSudoku() {
+    const s = state.sudoku;
+    let cellsHtml = '';
+    for (let r = 0; r < 9; r++) {
+      for (let c = 0; c < 9; c++) {
+        const v = s.grid[r][c];
+        const cls = [
+          'sudoku-cell',
+          s.given[r][c] ? 'given' : (v ? 'user' : ''),
+          (r === s.cursor.r && c === s.cursor.c && s.mode === 'cell') ? 'focused' : ''
+        ].filter(Boolean).join(' ');
+        cellsHtml += `<div class="${cls}" data-r="${r}" data-c="${c}" onclick="sudokuClick(${r},${c})">${v||''}</div>`;
+      }
+    }
+    let numHtml = '';
+    for (let n = 1; n <= 9; n++) {
+      const focused = s.mode === 'num-pad' && s.numCursor === n - 1 ? 'dotpad-focus' : '';
+      numHtml += `<button class="num-btn ${focused}" onclick="sudokuInput(${n})">${n}</button>`;
+    }
+    numHtml += `<button class="num-btn ${s.mode==='num-pad'&&s.numCursor===9?'dotpad-focus':''}" onclick="sudokuInput(0)">⌫</button>`;
+
+    $('screen').innerHTML = `
+      ${renderHeader('SUDOKU', `Row ${s.cursor.r+1} · Col ${s.cursor.c+1}`)}
+      <div class="key-hints"><b>Tap</b> a cell, then a number · <b>F1/F2</b> step row · <b>Pan L/R</b> step column · <b>F3</b> open number pad</div>
+      <div class="sudoku-grid" id="sudoku-grid">${cellsHtml}</div>
+      <div class="num-pad">${numHtml}</div>
+      <div class="action-bar">
+        <button class="primary-btn" onclick="sudokuCheck()">Check</button>
+        <button class="ghost-btn" onclick="sudokuReset()">Reset</button>
+      </div>
+      ${renderDotpadPreview()}
+    `;
+  }
+
+  function sudokuClick(r, c) {
+    const s = state.sudoku;
+    if (s.given[r][c]) { toast('Given digit'); return; }
+    s.cursor.r = r; s.cursor.c = c; s.mode = 'cell';
+    render();
+    speak(`Row ${r+1} column ${c+1}. ${s.grid[r][c] || 'empty'}.`);
+  }
+  function sudokuInput(n) {
+    const s = state.sudoku;
+    const { r, c } = s.cursor;
+    if (s.given[r][c]) { toast('Given digit'); return; }
+    s.grid[r][c] = n;
+    render();
+    speak(n === 0 ? 'Erased' : ('Set to ' + n));
+  }
+  function sudokuCheck() {
+    const s = state.sudoku;
+    let wrong = 0, empty = 0;
+    for (let r=0; r<9; r++) for (let c=0; c<9; c++) {
+      if (s.grid[r][c] === 0) empty++;
+      else if (s.grid[r][c] !== SUDOKU_SOLUTION[r][c]) wrong++;
+    }
+    if (empty === 0 && wrong === 0) {
+      toast('☆ Solved!', 3000);
+      speak('Solved.');
+    } else if (wrong === 0) {
+      toast(empty + ' cells to go');
+      speak(empty + ' cells remaining.');
+    } else {
+      toast(wrong + ' wrong · ' + empty + ' empty');
+      speak(wrong + ' wrong, ' + empty + ' empty.');
+    }
+  }
+  function sudokuReset() {
+    state.sudoku = null;
+    initSudoku();
+    render();
+  }
+
+  // ============================================================
+  // MINESWEEPER
+  // ============================================================
+  function initMinesweeper() {
+    const N = 9, MINES = 10;
+    const grid = Array.from({length: N}, () => Array(N).fill(0));
+    const revealed = Array.from({length: N}, () => Array(N).fill(false));
+    const flagged = Array.from({length: N}, () => Array(N).fill(false));
+    // Place mines
+    let placed = 0;
+    while (placed < MINES) {
+      const r = Math.floor(Math.random() * N);
+      const c = Math.floor(Math.random() * N);
+      if (grid[r][c] !== -1) { grid[r][c] = -1; placed++; }
+    }
+    // Compute numbers
+    for (let r=0; r<N; r++) for (let c=0; c<N; c++) {
+      if (grid[r][c] === -1) continue;
+      let cnt = 0;
+      for (let dr=-1; dr<=1; dr++) for (let dc=-1; dc<=1; dc++) {
+        const nr = r+dr, nc = c+dc;
+        if (nr<0||nr>=N||nc<0||nc>=N) continue;
+        if (grid[nr][nc] === -1) cnt++;
+      }
+      grid[r][c] = cnt;
+    }
+    state.minesweeper = {
+      N, MINES,
+      grid, revealed, flagged,
+      cursor: { r: 0, c: 0 },
+      gameOver: false, won: false,
+    };
+  }
+
+  function renderMinesweeper() {
+    const s = state.minesweeper;
+    let cellsHtml = '';
+    for (let r=0; r<s.N; r++) for (let c=0; c<s.N; c++) {
+      const focused = (r === s.cursor.r && c === s.cursor.c) ? 'focused' : '';
+      let cls = `ms-cell ${focused}`;
+      let label = '';
+      if (s.revealed[r][c]) {
+        if (s.grid[r][c] === -1) { cls += ' mine'; }
+        else {
+          cls += ' revealed n' + s.grid[r][c];
+          if (s.grid[r][c] > 0) label = s.grid[r][c];
+        }
+      } else if (s.flagged[r][c]) {
+        cls += ' flagged';
+      }
+      cellsHtml += `<div class="${cls}" onclick="msClick(${r},${c})" oncontextmenu="event.preventDefault();msFlag(${r},${c});return false">${label}</div>`;
+    }
+    const flagsLeft = s.MINES - s.flagged.flat().filter(Boolean).length;
+
+    $('screen').innerHTML = `
+      ${renderHeader('MINESWEEPER', `Cursor at row ${s.cursor.r+1}, col ${s.cursor.c+1}`)}
+      <div class="key-hints"><b>Tap</b> reveal · <b>right-click</b> flag · <b>F3</b> reveal · <b>F4</b> flag</div>
+      <div class="ms-status">
+        <span>Mines: <b>${s.MINES}</b></span>
+        <span>Flags left: <b>${flagsLeft}</b></span>
+        <span>${s.gameOver ? (s.won ? '☆ Win' : '☠ Lost') : 'Playing'}</span>
+      </div>
+      <div class="ms-grid" id="ms-grid" style="grid-template-columns: repeat(${s.N}, 1fr)">${cellsHtml}</div>
+      <div class="action-bar">
+        <button class="primary-btn" onclick="initMinesweeper();render()">New Game</button>
+      </div>
+      ${renderDotpadPreview()}
+    `;
+  }
+
+  function msClick(r, c) {
+    const s = state.minesweeper;
+    if (s.gameOver) return;
+    s.cursor.r = r; s.cursor.c = c;
+    if (s.flagged[r][c]) { render(); return; }
+    if (s.grid[r][c] === -1) {
+      // Reveal all mines
+      for (let r2=0; r2<s.N; r2++) for (let c2=0; c2<s.N; c2++)
+        if (s.grid[r2][c2] === -1) s.revealed[r2][c2] = true;
+      s.gameOver = true; s.won = false;
+      toast('☠ Boom!', 2000); speak('Mine. Game over.');
+      render(); return;
+    }
+    msFlood(r, c);
+    msCheckWin();
+    render();
+    speak('Row ' + (r+1) + ' col ' + (c+1) + ': ' + (s.grid[r][c] === 0 ? 'safe' : s.grid[r][c] + ' nearby'));
+  }
+  function msFlood(r, c) {
+    const s = state.minesweeper;
+    if (r<0||r>=s.N||c<0||c>=s.N) return;
+    if (s.revealed[r][c] || s.flagged[r][c]) return;
+    if (s.grid[r][c] === -1) return;
+    s.revealed[r][c] = true;
+    if (s.grid[r][c] === 0) {
+      for (let dr=-1; dr<=1; dr++) for (let dc=-1; dc<=1; dc++)
+        if (dr || dc) msFlood(r+dr, c+dc);
+    }
+  }
+  function msFlag(r, c) {
+    const s = state.minesweeper;
+    if (s.gameOver || s.revealed[r][c]) return;
+    s.flagged[r][c] = !s.flagged[r][c];
+    s.cursor.r = r; s.cursor.c = c;
+    render();
+    speak(s.flagged[r][c] ? 'Flagged' : 'Unflagged');
+  }
+  function msCheckWin() {
+    const s = state.minesweeper;
+    let safeCells = 0, safeRevealed = 0;
+    for (let r=0; r<s.N; r++) for (let c=0; c<s.N; c++) {
+      if (s.grid[r][c] !== -1) {
+        safeCells++;
+        if (s.revealed[r][c]) safeRevealed++;
+      }
+    }
+    if (safeCells === safeRevealed) {
+      s.gameOver = true; s.won = true;
+      toast('☆ Solved!', 3000); speak('Solved. Congratulations.');
+    }
+  }
+
+  // ============================================================
+  // NONOGRAM
+  // ============================================================
+  // 10x10 picture — simple "smile" face
+  const NONO_TARGET = [
+    [0,0,1,1,1,1,1,1,0,0],
+    [0,1,0,0,0,0,0,0,1,0],
+    [1,0,0,1,0,0,1,0,0,1],
+    [1,0,0,1,0,0,1,0,0,1],
+    [1,0,0,0,0,0,0,0,0,1],
+    [1,0,1,0,0,0,0,1,0,1],
+    [1,0,0,1,0,0,1,0,0,1],
+    [1,0,0,0,1,1,0,0,0,1],
+    [0,1,0,0,0,0,0,0,1,0],
+    [0,0,1,1,1,1,1,1,0,0],
+  ];
+
+  function computeHints(grid, axis) {
+    // axis: 'row' or 'col'
+    const N = grid.length;
+    const hints = [];
+    if (axis === 'row') {
+      for (let r=0; r<N; r++) {
+        const line = grid[r];
+        const groups = [];
+        let cur = 0;
+        for (let c=0; c<N; c++) {
+          if (line[c]) cur++;
+          else if (cur) { groups.push(cur); cur = 0; }
+        }
+        if (cur) groups.push(cur);
+        hints.push(groups.length ? groups : [0]);
+      }
+    } else {
+      for (let c=0; c<N; c++) {
+        const groups = [];
+        let cur = 0;
+        for (let r=0; r<N; r++) {
+          if (grid[r][c]) cur++;
+          else if (cur) { groups.push(cur); cur = 0; }
+        }
+        if (cur) groups.push(cur);
+        hints.push(groups.length ? groups : [0]);
+      }
+    }
+    return hints;
+  }
+
+  function initNonogram() {
+    if (state.nonogram) return;
+    const N = 10;
+    state.nonogram = {
+      N,
+      target: NONO_TARGET,
+      state: Array.from({length: N}, () => Array(N).fill(0)), // 0 empty, 1 filled, 2 x
+      rowHints: computeHints(NONO_TARGET, 'row'),
+      colHints: computeHints(NONO_TARGET, 'col'),
+      cursor: { r: 0, c: 0 },
+    };
+  }
+
+  function renderNonogram() {
+    const s = state.nonogram;
+    // Column hints
+    let colHtml = '';
+    for (let c=0; c<s.N; c++) {
+      const hints = s.colHints[c].join(' ');
+      colHtml += `<div class="nono-hint-cell col">${hints.replace(/ /g, '<br/>')}</div>`;
+    }
+    // Row hints
+    let rowHtml = '';
+    for (let r=0; r<s.N; r++) {
+      const hints = s.rowHints[r].join(' ');
+      rowHtml += `<div class="nono-hint-cell row">${hints}</div>`;
+    }
+    // Grid
+    let cellsHtml = '';
+    for (let r=0; r<s.N; r++) for (let c=0; c<s.N; c++) {
+      const v = s.state[r][c];
+      const focused = (r === s.cursor.r && c === s.cursor.c) ? 'focused' : '';
+      const cls = `nono-cell ${v===1?'filled':''} ${v===2?'x':''} ${focused}`;
+      cellsHtml += `<div class="${cls}" onclick="nonoClick(${r},${c})" oncontextmenu="event.preventDefault();nonoX(${r},${c});return false"></div>`;
+    }
+
+    $('screen').innerHTML = `
+      ${renderHeader('NONOGRAM', `Cursor at row ${s.cursor.r+1}, col ${s.cursor.c+1}`)}
+      <div class="key-hints"><b>Tap</b> fill · <b>right-click</b> mark X · <b>F3</b> fill · <b>F4</b> mark</div>
+      <div class="nono-wrap" style="grid-template-columns: 80px repeat(${s.N}, 1fr)">
+        <div class="nono-hint-cell" style="grid-row:1;grid-column:1"></div>
+        ${[...Array(s.N).keys()].map(c => `<div class="nono-hint-cell col" style="grid-row:1;grid-column:${c+2}">${s.colHints[c].join('<br/>')}</div>`).join('')}
+        ${[...Array(s.N).keys()].map(r => `<div class="nono-hint-cell row" style="grid-row:${r+2};grid-column:1">${s.rowHints[r].join(' ')}</div>`).join('')}
+        <div class="nono-grid-area" style="grid-row:2/span ${s.N};grid-column:2/span ${s.N};display:grid;grid-template-columns:repeat(${s.N},1fr);grid-template-rows:repeat(${s.N},1fr)">${cellsHtml}</div>
+      </div>
+      <div class="action-bar">
+        <button class="primary-btn" onclick="nonoCheck()">Check</button>
+        <button class="ghost-btn" onclick="state.nonogram=null;initNonogram();render()">Reset</button>
+      </div>
+      ${renderDotpadPreview()}
+    `;
+  }
+
+  function nonoClick(r, c) {
+    const s = state.nonogram;
+    s.cursor.r = r; s.cursor.c = c;
+    s.state[r][c] = s.state[r][c] === 1 ? 0 : 1;
+    render();
+    speak(s.state[r][c] === 1 ? 'Filled' : 'Empty');
+  }
+  function nonoX(r, c) {
+    const s = state.nonogram;
+    s.cursor.r = r; s.cursor.c = c;
+    s.state[r][c] = s.state[r][c] === 2 ? 0 : 2;
+    render();
+    speak(s.state[r][c] === 2 ? 'X marked' : 'Cleared');
+  }
+  function nonoCheck() {
+    const s = state.nonogram;
+    let ok = true;
+    for (let r=0; r<s.N; r++) for (let c=0; c<s.N; c++) {
+      const expected = s.target[r][c] === 1;
+      const actual = s.state[r][c] === 1;
+      if (expected !== actual) { ok = false; }
+    }
+    if (ok) { toast('☆ Picture revealed!', 3000); speak('Solved.'); }
+    else { toast('Not quite there'); speak('Not yet.'); }
+  }
+
+  // ============================================================
+  // MAZE
+  // ============================================================
+  function initMaze() {
+    const N = 15;
+    // Recursive backtracker (always N odd for proper walls)
+    const grid = Array.from({length: N}, () => Array(N).fill(1)); // 1 = wall, 0 = path
+    function carve(r, c) {
+      grid[r][c] = 0;
+      const dirs = [[-2,0],[2,0],[0,-2],[0,2]].sort(() => Math.random() - 0.5);
+      for (const [dr, dc] of dirs) {
+        const nr = r + dr, nc = c + dc;
+        if (nr > 0 && nr < N-1 && nc > 0 && nc < N-1 && grid[nr][nc] === 1) {
+          grid[r + dr/2][c + dc/2] = 0;
+          carve(nr, nc);
+        }
+      }
+    }
+    carve(1, 1);
+    state.maze = {
+      N, grid,
+      player: { r: 1, c: 1 },
+      goal: { r: N-2, c: N-2 },
+      won: false,
+    };
+  }
+
+  function renderMaze() {
+    const s = state.maze;
+    let cellsHtml = '';
+    for (let r=0; r<s.N; r++) for (let c=0; c<s.N; c++) {
+      let cls = 'maze-cell';
+      if (s.grid[r][c] === 1) cls += ' wall';
+      if (s.player.r === r && s.player.c === c) cls += ' player';
+      if (s.goal.r === r && s.goal.c === c) cls += ' goal';
+      cellsHtml += `<div class="${cls}"></div>`;
+    }
+
+    $('screen').innerHTML = `
+      ${renderHeader('MAZE', `Player at row ${s.player.r+1}, col ${s.player.c+1}${s.won ? ' · ☆ Won!' : ''}`)}
+      <div class="key-hints"><b>F1</b> up · <b>F2</b> down · <b>Pan L</b> left · <b>Pan R</b> right · <b>Pan All</b> describe surroundings</div>
+      <div class="maze-grid" style="grid-template-columns:repeat(${s.N},1fr)">${cellsHtml}</div>
+      <div class="maze-controls">
+        <button class="num-btn empty"></button>
+        <button class="num-btn" onclick="mazeMove(-1, 0)">▲</button>
+        <button class="num-btn empty"></button>
+        <button class="num-btn" onclick="mazeMove(0, -1)">◀</button>
+        <button class="num-btn" onclick="mazeMove(1, 0)">▼</button>
+        <button class="num-btn" onclick="mazeMove(0, 1)">▶</button>
+      </div>
+      <div class="action-bar" style="margin-top:10px">
+        <button class="primary-btn" onclick="state.maze=null;initMaze();render()">New Maze</button>
+        <button class="ghost-btn" onclick="mazeDescribe()">Describe</button>
+      </div>
+      ${renderDotpadPreview()}
+    `;
+  }
+
+  function mazeMove(dr, dc) {
+    const s = state.maze;
+    if (s.won) return;
+    const nr = s.player.r + dr;
+    const nc = s.player.c + dc;
+    if (nr<0||nr>=s.N||nc<0||nc>=s.N) return;
+    if (s.grid[nr][nc] === 1) { toast('Wall'); speak('Wall.'); return; }
+    s.player.r = nr; s.player.c = nc;
+    if (s.player.r === s.goal.r && s.player.c === s.goal.c) {
+      s.won = true;
+      toast('☆ Reached the goal!', 3000); speak('Goal reached.');
+    }
+    render();
+    speak(['up','down','left','right'][dr === -1 ? 0 : dr === 1 ? 1 : dc === -1 ? 2 : 3] + (s.won ? '. Goal reached.' : '.'));
+  }
+
+  function mazeDescribe() {
+    const s = state.maze;
+    const dirs = [
+      ['up', -1, 0],['down', 1, 0],
+      ['left', 0, -1],['right', 0, 1]
+    ];
+    const open = dirs.filter(([_, dr, dc]) => {
+      const nr = s.player.r + dr, nc = s.player.c + dc;
+      return nr>=0 && nr<s.N && nc>=0 && nc<s.N && s.grid[nr][nc] === 0;
+    }).map(d => d[0]);
+    const dist = Math.abs(s.goal.r - s.player.r) + Math.abs(s.goal.c - s.player.c);
+    const msg = `Player at row ${s.player.r+1} column ${s.player.c+1}. Open: ${open.join(', ') || 'none'}. Goal ${dist} steps away.`;
+    toast(msg, 3500);
+    speak(msg);
+  }
+
+  // ============================================================
+  // DOT PAD PREVIEW + ACTUAL DISPLAY
+  // ============================================================
+  // Each Dot Pad cell = 2 cols × 3 rows of dots = 6 dots / cell
+  // Dot Pad has 60 cells (30 cols × 2 rows) for text mode,
+  // OR 300 cells (30 × 10) for graphic mode.
+  // For puzzles we use graphic mode — 30 cells wide × 10 cells tall.
+  // We'll preview a 30×3 strip (just one row of the puzzle status).
+
+  function renderDotpadPreview() {
+    // 30 cells wide, 1 row preview
+    let cells = '';
+    const data = getCurrentDotpadDots(); // 30×3 dots = 90 dots
+    for (let i = 0; i < 30; i++) {
+      const base = i * 3;
+      let dots = '';
+      // Each cell has 6 dots (2 cols × 3 rows). We use 1 col here.
+      for (let d = 0; d < 3; d++) {
+        const up = data[base + d] === 1;
+        dots += `<div class="dot d${d*2+1} ${up?'up':''}"></div>`;
+      }
+      cells += `<div class="dp-cell">${dots}</div>`;
+    }
+    return `
+      <div class="dotpad-preview">
+        <div class="dotpad-preview-label">DOT PAD PREVIEW (${state.dotpadConnected ? 'live' : 'simulated'})</div>
+        <div class="dotpad-preview-grid">${cells}</div>
+      </div>
+    `;
+  }
+
+  // Get a simple linear "row of dots" representing current puzzle state
+  function getCurrentDotpadDots() {
+    const out = new Array(90).fill(0);
+    if (state.screen === 'sudoku') {
+      const s = state.sudoku;
+      // 9 cells × ~3 dots-each = 27 dots showing current row
+      const row = s.grid[s.cursor.r];
+      for (let i = 0; i < 9; i++) {
+        const v = row[i];
+        // Filled cell = 3 dots up, empty = 0
+        if (v) { out[i*3] = 1; out[i*3+1] = 1; out[i*3+2] = 1; }
+        if (i === s.cursor.c) { out[i*3] = 1; out[i*3+2] = 1; } // bracket-style cursor
+      }
+    } else if (state.screen === 'minesweeper') {
+      const s = state.minesweeper;
+      const row = s.grid[s.cursor.r];
+      for (let i = 0; i < s.N; i++) {
+        if (s.revealed[s.cursor.r][i]) {
+          const v = row[i];
+          if (v === -1) { out[i*3] = 1; out[i*3+1] = 1; out[i*3+2] = 1; } // mine
+          else if (v > 0) { out[i*3] = 1; out[i*3+2] = 1; } // numeric
+        } else if (s.flagged[s.cursor.r][i]) {
+          out[i*3+1] = 1;
+        }
+        if (i === s.cursor.c) { out[i*3] = 1; out[i*3+2] = 1; }
+      }
+    } else if (state.screen === 'nonogram') {
+      const s = state.nonogram;
+      const row = s.state[s.cursor.r];
+      for (let i = 0; i < s.N; i++) {
+        if (row[i] === 1) { out[i*3] = 1; out[i*3+1] = 1; out[i*3+2] = 1; }
+        else if (row[i] === 2) { out[i*3+1] = 1; }
+        if (i === s.cursor.c) { out[i*3] = 1; out[i*3+2] = 1; }
+      }
+    } else if (state.screen === 'maze') {
+      const s = state.maze;
+      // Show player row
+      const row = s.grid[s.player.r];
+      for (let i = 0; i < Math.min(30, s.N); i++) {
+        if (row[i] === 1) { out[i*3] = 1; out[i*3+1] = 1; out[i*3+2] = 1; }
+        if (i === s.player.c) { out[i*3] = 1; out[i*3+1] = 1; out[i*3+2] = 1; }
+        if (s.goal.r === s.player.r && i === s.goal.c) { out[i*3+1] = 1; }
+      }
+    }
+    return out;
+  }
+
+  // ============================================================
+  // DOT PAD ACTUAL DEVICE — graphic mode (multi-line)
+  // ============================================================
+  // Dot Pad graphic data: hex string, each byte = 1 cell (2×3 dot pattern).
+  // 30 cols × 10 rows = 300 cells = 600 hex chars.
+  function pushToDotpad() {
+    if (!state.dotpadConnected || !window.DotPad) return;
+    const hex = renderPuzzleAsGraphicHex();
+    try {
+      window.DotPad.sdk.displayGraphicData(hex);
+    } catch(e) {
+      console.warn('[DotPad] push failed:', e);
+    }
+  }
+
+  // Build 30x10 grid hex from current puzzle
+  function renderPuzzleAsGraphicHex() {
+    // 300 cells, each 2 dots wide × 3 dots tall
+    // Each cell encoded as 8-bit (dots 1-6 used; 7-8 ignored)
+    const cells = new Array(300).fill(0);
+    function setCell(col, row, dotsBitmask) {
+      if (col<0||col>=30||row<0||row>=10) return;
+      cells[row*30 + col] = dotsBitmask;
+    }
+    if (state.screen === 'sudoku') {
+      // 9x9 → place each cell at col 1+i, row 1+r (2-cell spacing optional)
+      const s = state.sudoku;
+      // Use cells at columns 1-9, rows 0-8 (with row 9 as cursor row)
+      for (let r=0; r<9; r++) for (let c=0; c<9; c++) {
+        const v = s.grid[r][c];
+        let dots = 0;
+        if (v) {
+          // Simple mapping: dot 1 always up (cell occupied)
+          dots |= 0x01;
+          // Encode digit in dots 2-6 (binary 1-9 in 5 bits not used; just dot count)
+          // Visual: 1 = top, 2 = top+mid, ... 6 = all six. 7,8,9 wrap.
+          const n = Math.min(6, v);
+          for (let i = 0; i < n; i++) dots |= (1 << i);
+        }
+        if (r === s.cursor.r && c === s.cursor.c) {
+          dots |= 0x21; // dots 1 + 6 = bracket
+        }
+        setCell(c + 1, r, dots);
+      }
+    } else if (state.screen === 'minesweeper') {
+      const s = state.minesweeper;
+      for (let r=0; r<s.N; r++) for (let c=0; c<s.N; c++) {
+        let dots = 0;
+        if (s.revealed[r][c]) {
+          const v = s.grid[r][c];
+          if (v === -1) dots = 0x3F; // all 6 dots = mine
+          else if (v > 0) {
+            // Use dot count = number
+            const n = Math.min(6, v);
+            for (let i = 0; i < n; i++) dots |= (1 << i);
+          }
+          // 0 = empty revealed = no dots
+        } else if (s.flagged[r][c]) {
+          dots = 0x12; // dots 2+5 = flag
+        } else {
+          dots = 0x09; // dots 1+4 = covered
+        }
+        if (r === s.cursor.r && c === s.cursor.c) {
+          dots |= 0x21;
+        }
+        setCell(c + 1, r, dots);
+      }
+    } else if (state.screen === 'nonogram') {
+      const s = state.nonogram;
+      for (let r=0; r<s.N; r++) for (let c=0; c<s.N; c++) {
+        let dots = 0;
+        if (s.state[r][c] === 1) dots = 0x3F; // filled all 6
+        else if (s.state[r][c] === 2) dots = 0x12; // X marker
+        if (r === s.cursor.r && c === s.cursor.c) dots |= 0x21;
+        setCell(c + 1, r, dots);
+      }
+    } else if (state.screen === 'maze') {
+      const s = state.maze;
+      // 15x15 maze — fits in 15 cells wide × 10 cells tall (we'll show rows around player)
+      // Center view on player
+      const viewRows = 10;
+      const startR = Math.max(0, Math.min(s.N - viewRows, s.player.r - 5));
+      for (let dr=0; dr<viewRows; dr++) {
+        const r = startR + dr;
+        if (r >= s.N) break;
+        for (let c=0; c<Math.min(15, s.N); c++) {
+          let dots = 0;
+          if (s.grid[r][c] === 1) dots = 0x3F; // wall = solid
+          if (s.goal.r === r && s.goal.c === c) dots = 0x12; // goal marker
+          if (s.player.r === r && s.player.c === c) dots = 0x36; // player blob
+          setCell(c + 1, dr, dots);
+        }
+      }
+    }
+    // Encode to hex
+    let hex = '';
+    for (const d of cells) hex += d.toString(16).padStart(2, '0').toUpperCase();
+    return hex;
+  }
+
+  // ============================================================
+  // DOT PAD INPUT — key handling
+  // ============================================================
+  function onDotpadKey(device, keyCode, msg) {
+    if (!window.DotPad) return;
+    const KC = window.DotPad.KeyCodes;
+    if (state.screen === 'launcher') {
+      // F1/F2 = navigate game cards · F3 = select
+      const cards = Array.from(document.querySelectorAll('.game-card'));
+      if (keyCode === KC.KeyFunction1) state.dotpadCursor = (state.dotpadCursor - 1 + cards.length) % cards.length;
+      else if (keyCode === KC.KeyFunction2) state.dotpadCursor = (state.dotpadCursor + 1) % cards.length;
+      else if (keyCode === KC.KeyFunction3) { cards[state.dotpadCursor]?.click(); return; }
+      dotpadHighlight();
+      speak(cards[state.dotpadCursor]?.querySelector('.game-card-title')?.textContent || '');
+      return;
+    }
+    // Game screens
+    if (keyCode === KC.PanningAll) {
+      // Replay context
+      if (state.screen === 'maze') return mazeDescribe();
+      const p = document.querySelector('.game-sub')?.textContent || '';
+      speak(p);
+      return;
+    }
+    if (state.screen === 'sudoku') {
+      const s = state.sudoku;
+      if (keyCode === KC.KeyFunction1) s.cursor.r = (s.cursor.r - 1 + 9) % 9;
+      else if (keyCode === KC.KeyFunction2) s.cursor.r = (s.cursor.r + 1) % 9;
+      else if (keyCode === KC.PanningLeft) s.cursor.c = (s.cursor.c - 1 + 9) % 9;
+      else if (keyCode === KC.PanningRight) s.cursor.c = (s.cursor.c + 1) % 9;
+      else if (keyCode === KC.KeyFunction3) {
+        // Cycle digit at cursor
+        if (!s.given[s.cursor.r][s.cursor.c]) {
+          s.grid[s.cursor.r][s.cursor.c] = (s.grid[s.cursor.r][s.cursor.c] + 1) % 10;
+        }
+      } else if (keyCode === KC.KeyFunction4) {
+        sudokuCheck(); return;
+      }
+      render();
+      speak('Row ' + (s.cursor.r+1) + ' col ' + (s.cursor.c+1) + ': ' + (s.grid[s.cursor.r][s.cursor.c] || 'empty'));
+    } else if (state.screen === 'minesweeper') {
+      const s = state.minesweeper;
+      if (keyCode === KC.KeyFunction1) s.cursor.r = (s.cursor.r - 1 + s.N) % s.N;
+      else if (keyCode === KC.KeyFunction2) s.cursor.r = (s.cursor.r + 1) % s.N;
+      else if (keyCode === KC.PanningLeft) s.cursor.c = (s.cursor.c - 1 + s.N) % s.N;
+      else if (keyCode === KC.PanningRight) s.cursor.c = (s.cursor.c + 1) % s.N;
+      else if (keyCode === KC.KeyFunction3) { msClick(s.cursor.r, s.cursor.c); return; }
+      else if (keyCode === KC.KeyFunction4) { msFlag(s.cursor.r, s.cursor.c); return; }
+      render();
+      const v = s.grid[s.cursor.r][s.cursor.c];
+      const status = s.revealed[s.cursor.r][s.cursor.c] ? (v === -1 ? 'mine' : v > 0 ? v + ' nearby' : 'empty') :
+        s.flagged[s.cursor.r][s.cursor.c] ? 'flagged' : 'hidden';
+      speak('Row ' + (s.cursor.r+1) + ' col ' + (s.cursor.c+1) + ': ' + status);
+    } else if (state.screen === 'nonogram') {
+      const s = state.nonogram;
+      if (keyCode === KC.KeyFunction1) s.cursor.r = (s.cursor.r - 1 + s.N) % s.N;
+      else if (keyCode === KC.KeyFunction2) s.cursor.r = (s.cursor.r + 1) % s.N;
+      else if (keyCode === KC.PanningLeft) s.cursor.c = (s.cursor.c - 1 + s.N) % s.N;
+      else if (keyCode === KC.PanningRight) s.cursor.c = (s.cursor.c + 1) % s.N;
+      else if (keyCode === KC.KeyFunction3) { nonoClick(s.cursor.r, s.cursor.c); return; }
+      else if (keyCode === KC.KeyFunction4) { nonoX(s.cursor.r, s.cursor.c); return; }
+      render();
+      const v = s.state[s.cursor.r][s.cursor.c];
+      const status = v === 1 ? 'filled' : v === 2 ? 'x marked' : 'empty';
+      const hint = 'Row hint ' + s.rowHints[s.cursor.r].join(' ') + '. Col hint ' + s.colHints[s.cursor.c].join(' ');
+      speak('Row ' + (s.cursor.r+1) + ' col ' + (s.cursor.c+1) + ': ' + status + '. ' + hint);
+    } else if (state.screen === 'maze') {
+      if (keyCode === KC.KeyFunction1) mazeMove(-1, 0);
+      else if (keyCode === KC.KeyFunction2) mazeMove(1, 0);
+      else if (keyCode === KC.PanningLeft) mazeMove(0, -1);
+      else if (keyCode === KC.PanningRight) mazeMove(0, 1);
+    }
+  }
+
+  function dotpadHighlight() {
+    document.querySelectorAll('.dotpad-focus').forEach(el => el.classList.remove('dotpad-focus'));
+    if (state.screen === 'launcher') {
+      const cards = document.querySelectorAll('.game-card');
+      if (cards[state.dotpadCursor]) cards[state.dotpadCursor].classList.add('dotpad-focus');
+    }
+  }
+
+  // ============================================================
+  // DOT PAD CONNECT
+  // ============================================================
+  function dotpadAvailable() { return !!(window.DotPad && window.DotPad.sdk); }
+  function openDpOverlay() { $('dp-overlay').classList.add('active'); }
+  function closeDpOverlay() { $('dp-overlay').classList.remove('active'); }
+
+  async function connectBle() {
+    if (!dotpadAvailable()) { alert('Dot Pad SDK not loaded'); return; }
+    try {
+      const device = await window.DotPad.scanner.startBleScan();
+      if (!device) return;
+      window.DotPad.sdk.setCallBack(onDotpadMessage, onDotpadKey);
+      const connected = await window.DotPad.sdk.connectBleDevice(device);
+      if (connected) {
+        state.dotpadConnected = true;
+        state.dotpadDevice = connected;
+        state.dotpadName = device.name || 'Dot Pad';
+        closeDpOverlay();
+        speak('Dot Pad connected. F1 and F2 move cursor. F3 select. F4 toggle mark.');
+        render();
+      }
+    } catch (e) {
+      alert('BLE failed: ' + (e.message || e));
+    }
+  }
+
+  async function connectUsb() {
+    if (!dotpadAvailable()) { alert('Dot Pad SDK not loaded'); return; }
+    try {
+      const device = await window.DotPad.scanner.startUsbScan();
+      if (!device) return;
+      window.DotPad.sdk.setCallBack(onDotpadMessage, onDotpadKey);
+      const connected = await window.DotPad.sdk.connectUsbDevice(device);
+      if (connected) {
+        state.dotpadConnected = true;
+        state.dotpadDevice = connected;
+        state.dotpadName = 'USB Dot Pad';
+        closeDpOverlay();
+        speak('Dot Pad connected. F1 and F2 move cursor. F3 select. F4 toggle mark.');
+        render();
+      }
+    } catch (e) {
+      alert('USB failed: ' + (e.message || e));
+    }
+  }
+
+  function onDotpadMessage(device, code, msg) {
+    if (!window.DotPad) return;
+    const DC = window.DotPad.DataCodes || {};
+    if (code === DC.Connected) {
+      state.dotpadConnected = true;
+      render();
+    } else if (code === DC.Disconnected) {
+      state.dotpadConnected = false;
+      render();
+    }
+  }
+
+  // ============================================================
+  // KEYBOARD SHORTCUTS (desktop testing)
+  // ============================================================
+  document.addEventListener('keydown', (e) => {
+    if (state.screen === 'maze' && !e.target.matches('input, textarea')) {
+      if (e.key === 'ArrowUp') { e.preventDefault(); mazeMove(-1, 0); }
+      else if (e.key === 'ArrowDown') { e.preventDefault(); mazeMove(1, 0); }
+      else if (e.key === 'ArrowLeft') { e.preventDefault(); mazeMove(0, -1); }
+      else if (e.key === 'ArrowRight') { e.preventDefault(); mazeMove(0, 1); }
+    } else if (state.screen === 'sudoku' && !e.target.matches('input, textarea')) {
+      const s = state.sudoku;
+      if (e.key === 'ArrowUp') { e.preventDefault(); s.cursor.r = (s.cursor.r - 1 + 9) % 9; render(); }
+      else if (e.key === 'ArrowDown') { e.preventDefault(); s.cursor.r = (s.cursor.r + 1) % 9; render(); }
+      else if (e.key === 'ArrowLeft') { e.preventDefault(); s.cursor.c = (s.cursor.c - 1 + 9) % 9; render(); }
+      else if (e.key === 'ArrowRight') { e.preventDefault(); s.cursor.c = (s.cursor.c + 1) % 9; render(); }
+      else if (/^[0-9]$/.test(e.key)) sudokuInput(parseInt(e.key));
+    } else if ((state.screen === 'minesweeper' || state.screen === 'nonogram') && !e.target.matches('input, textarea')) {
+      const s = state.screen === 'minesweeper' ? state.minesweeper : state.nonogram;
+      if (e.key === 'ArrowUp') { e.preventDefault(); s.cursor.r = (s.cursor.r - 1 + s.N) % s.N; render(); }
+      else if (e.key === 'ArrowDown') { e.preventDefault(); s.cursor.r = (s.cursor.r + 1) % s.N; render(); }
+      else if (e.key === 'ArrowLeft') { e.preventDefault(); s.cursor.c = (s.cursor.c - 1 + s.N) % s.N; render(); }
+      else if (e.key === 'ArrowRight') { e.preventDefault(); s.cursor.c = (s.cursor.c + 1) % s.N; render(); }
+      else if (e.key === ' ' || e.key === 'Enter') {
+        e.preventDefault();
+        if (state.screen === 'minesweeper') msClick(s.cursor.r, s.cursor.c);
+        else nonoClick(s.cursor.r, s.cursor.c);
+      } else if (e.key === 'f' || e.key === 'F') {
+        if (state.screen === 'minesweeper') msFlag(s.cursor.r, s.cursor.c);
+        else nonoX(s.cursor.r, s.cursor.c);
+      }
+    }
+  });
+
+  // ============================================================
+  // BOOT
+  // ============================================================
+  // expose for inline onclick handlers
+  window.startGame = startGame;
+  window.goLauncher = goLauncher;
+  window.toggleTts = toggleTts;
+  window.openDpOverlay = openDpOverlay;
+  window.closeDpOverlay = closeDpOverlay;
+  window.connectBle = connectBle;
+  window.connectUsb = connectUsb;
+  window.sudokuClick = sudokuClick;
+  window.sudokuInput = sudokuInput;
+  window.sudokuCheck = sudokuCheck;
+  window.sudokuReset = sudokuReset;
+  window.msClick = msClick;
+  window.msFlag = msFlag;
+  window.nonoClick = nonoClick;
+  window.nonoX = nonoX;
+  window.nonoCheck = nonoCheck;
+  window.mazeMove = mazeMove;
+  window.mazeDescribe = mazeDescribe;
+  window.initMinesweeper = initMinesweeper;
+  window.initMaze = initMaze;
+  window.initNonogram = initNonogram;
+  window.state = state;
+
+  render();
+  </script>
+</body>
+</html>
