@@ -360,30 +360,10 @@
     }
     .sudoku-cell {
       background: var(--bg-card);
-      display: flex; flex-direction: column;
-      justify-content: center; align-items: center;
-      gap: 3px;
+      display: flex; justify-content: center; align-items: center;
       font-size: 14px; font-weight: 700; color: var(--fg);
       cursor: pointer; user-select: none;
       position: relative;
-      padding: 4px;
-    }
-    .sudoku-cell .cell-digit {
-      font-size: 16px; font-weight: 700; line-height: 1;
-    }
-    .sudoku-cell .cell-braille {
-      width: 60%; max-width: 32px; height: auto;
-      opacity: 0.85;
-    }
-    .sudoku-cell .cell-braille .b-up { fill: var(--fg); }
-    .sudoku-cell .cell-braille .b-dn { fill: var(--line); }
-    .sudoku-cell.focused .cell-braille .b-up { fill: var(--bg-card); }
-    .sudoku-cell.focused .cell-braille .b-dn { fill: rgba(255,255,255,0.3); }
-    /* 좁은 그리드(9x9)는 braille 좀 더 작게 */
-    @media (max-width: 480px) {
-      .sudoku-cell { padding: 2px; gap: 1px; }
-      .sudoku-cell .cell-digit { font-size: 12px; }
-      .sudoku-cell .cell-braille { width: 80%; max-width: 22px; }
     }
     .sudoku-cell.given { color: var(--fg); background: var(--bg-soft); }
     .sudoku-cell.user { color: var(--info); }
@@ -393,13 +373,6 @@
     .sudoku-cell.box-r { border-right: 2px solid var(--fg); }
     .sudoku-cell.box-b { border-bottom: 2px solid var(--fg); }
 
-
-    /* 9x9 그리드는 셀이 작아서 digit만 표시 */
-    .sudoku-grid[aria-colcount="9"] .cell-braille { display: none; }
-    .sudoku-grid[aria-colcount="9"] .cell-digit { font-size: 14px; }
-    /* 4x4는 셀 크니까 braille 크게 */
-    .sudoku-grid[aria-colcount="4"] .cell-braille { max-width: 48px; width: 70%; }
-    .sudoku-grid[aria-colcount="4"] .cell-digit { font-size: 22px; }
 
     /* iOS-style number pad */
     .num-pad {
@@ -1131,29 +1104,6 @@
   // ============================================================
   // SUDOKU
   // ============================================================
-  // 화면 셀 안에 표시할 braille 점자 패턴 SVG (numeric prefix + digit letter)
-  // 6-dot 표준 braille: 2 col × 3 row. 8-dot mode 무시 (시각엔 6-dot만)
-  function renderBrailleDigitSVG(digit) {
-    const letterByte = BRL_NUM[digit];
-    if (letterByte === undefined) return '';
-    function dots(byte) {
-      // bit 0=dot1(0,0) 1=dot2(0,1) 2=dot3(0,2) 3=dot4(1,0) 4=dot5(1,1) 5=dot6(1,2)
-      const positions = [
-        [0,0,'1'], [0,1,'2'], [0,2,'3'],
-        [1,0,'4'], [1,1,'5'], [1,2,'6']
-      ];
-      return positions.map(([x, y, d]) => {
-        const up = (byte >> (parseInt(d)-1)) & 1;
-        return `<circle cx="${x*5+3}" cy="${y*5+3}" r="1.8" class="${up?'b-up':'b-dn'}"/>`;
-      }).join('');
-    }
-    // 2 cells 옆으로 = 13 wide (cell1 8 + gap 5)
-    return `<svg class="cell-braille" viewBox="0 0 18 18" aria-hidden="true">
-      ${dots(BRL_NUM_PREFIX)}
-      <g transform="translate(10,0)">${dots(letterByte)}</g>
-    </svg>`;
-  }
-
   function initSudoku() {
     if (state.sudoku) return;
     const cfg = SUDOKU_BY_DIFF[state.difficulty.sudoku];
@@ -1186,8 +1136,7 @@
           isBoxBottom ? 'box-b' : '',
         ].filter(Boolean).join(' ');
         const cellLabel = (v ? `Row ${r+1} column ${c+1}, ${s.given[r][c]?'given':'user'} value ${v}` : `Row ${r+1} column ${c+1}, empty`);
-        const brlVis = v ? renderBrailleDigitSVG(v) : '';
-        cellsHtml += `<div class="${cls}" role="gridcell" aria-label="${cellLabel}" data-r="${r}" data-c="${c}" onclick="sudokuClick(${r},${c})"><span class="cell-digit" aria-hidden="true">${v||''}</span>${brlVis}</div>`;
+        cellsHtml += `<div class="${cls}" role="gridcell" aria-label="${cellLabel}" data-r="${r}" data-c="${c}" onclick="sudokuClick(${r},${c})">${v||''}</div>`;
       }
     }
     const subs = ['', '', 'ABC', 'DEF', 'GHI', 'JKL', 'MNO', 'PQRS', 'TUV', 'WXYZ'];
@@ -2075,6 +2024,35 @@
           if (drow < DP_H && dcol < DP_W) cells[drow * DP_W + dcol] = 0xFF;
         }
       });
+
+      // 4) 셀 사이 thin 경계 라인 — 8-dot mode dots 7+8 (0xC0)
+      // 디지트(dots 1-5)와 충돌 안 하면서 박스 divider(0xFF)와도 명확히 구분
+      for (let r = 0; r < s.N; r++) {
+        for (let c = 0; c < s.N; c++) {
+          const dcol = ox + c * cellW + vOff(c);
+          const drow = oy + r * cellH + hOff(r);
+          const isLastCol = c === s.N - 1;
+          const hasVDivAfter = vDivs.includes(c);
+          const isLastRow = r === s.N - 1;
+          const hasHDivAfter = hDivs.includes(r);
+          // 셀 우측 경계 (vertical thin line)
+          if (!isLastCol && !hasVDivAfter) {
+            for (let dy = 0; dy < cellH; dy++) {
+              const rr = drow + dy;
+              const cc = dcol + cellW - 1;
+              if (rr < DP_H && cc < DP_W) cells[rr * DP_W + cc] |= 0xC0;
+            }
+          }
+          // 셀 하단 경계 (horizontal thin line)
+          if (!isLastRow && !hasHDivAfter) {
+            for (let dx = 0; dx < cellW; dx++) {
+              const cc = dcol + dx;
+              const rr = drow + cellH - 1;
+              if (rr < DP_H && cc < DP_W) cells[rr * DP_W + cc] |= 0xC0;
+            }
+          }
+        }
+      }
     } else if (state.screen === 'minesweeper') {
       const s = state.minesweeper;
       const L = dpLayout(s.N, true);
@@ -2122,6 +2100,21 @@
             if (dx === 0) mark |= 0x47;
             if (dx === L.cellW - 1) mark |= 0xB8;
             cells[rr * DP_W + cc] |= mark;
+          }
+        }
+        // 셀 사이 thin 경계 라인 (Minesweeper 박스 없음 → 모든 셀 경계에 라인)
+        const isLast = c === s.N - 1;
+        const isLastR = r === s.N - 1;
+        if (!isLast) {
+          for (let dy = 0; dy < L.cellH; dy++) {
+            const rr = row + dy, cc = col + L.cellW - 1;
+            if (rr < DP_H && cc < DP_W) cells[rr * DP_W + cc] |= 0xC0;
+          }
+        }
+        if (!isLastR) {
+          for (let dx = 0; dx < L.cellW; dx++) {
+            const cc = col + dx, rr = row + L.cellH - 1;
+            if (rr < DP_H && cc < DP_W) cells[rr * DP_W + cc] |= 0xC0;
           }
         }
       }
