@@ -2092,7 +2092,17 @@
         }
         // empty = 0 (skip)
         if (r === s.cursor.r && c === s.cursor.c) {
-          dpOutline(cells, col, row, L.cellW, L.cellH, 0xFF);
+          // 8-dot cursor frame (Sudoku/Minesweeper와 동일 패턴)
+          for (let dy = 0; dy < L.cellH; dy++) for (let dx = 0; dx < L.cellW; dx++) {
+            const rr = row + dy, cc = col + dx;
+            if (cc < 0 || cc >= DP_W || rr < 0 || rr >= DP_H) continue;
+            let mark = 0;
+            if (dy === 0) mark |= 0x09;
+            if (dy === L.cellH - 1) mark |= 0xC0;
+            if (dx === 0) mark |= 0x47;
+            if (dx === L.cellW - 1) mark |= 0xB8;
+            cells[rr * DP_W + cc] |= mark;
+          }
         }
       }
     } else if (state.screen === 'maze') {
@@ -2120,9 +2130,9 @@
             dpSetBlock(cells, col, row, L.cellW, L.cellH, 0x12);
           }
           if (s.player.r === r && s.player.c === c) {
-            // 플레이어 = 솔리드 블록 + outline (강조)
-            dpSetBlock(cells, col, row, L.cellW, L.cellH, 0xFF);
-            dpOutline(cells, col-1, row, L.cellW+2, L.cellH, 0x09);
+            // 플레이어 = distinct pattern (dots 2+3+5+6 = 0x36 = middle/bottom blob)
+            // 벽(0xFF, 8 dots all)과 골(0x12, 2 dots middle row)과 명확히 구분
+            dpSetBlock(cells, col, row, L.cellW, L.cellH, 0x36);
           }
         }
       }
@@ -2150,11 +2160,11 @@
     }
     if (state.screen === 'nonogram') {
       const s = state.nonogram;
-      return `Nonogram ${s.N} by ${s.N}, difficulty ${DIFF_LABEL[state.difficulty.nonogram]}. F1 row up, F2 row down, pan left and right for columns. F3 fills or empties. F4 marks X or clears. Completed rows and columns are announced automatically. On screen use Read hints and Progress. F1 plus F4 home. F3 plus F4 help.`;
+      return `Nonogram ${s.N} by ${s.N}, difficulty ${DIFF_LABEL[state.difficulty.nonogram]}. On Dot Pad, filled cells are full 8-dot blocks, X marks are 2 dots middle. Cursor shows 4-edge frame. F1 row up, F2 row down, pan left and right for columns. F3 fills or empties. F4 marks X or clears. Completed rows and columns are announced automatically. On screen use Read hints and Progress. F1 plus F4 home. F3 plus F4 help.`;
     }
     if (state.screen === 'maze') {
       const s = state.maze;
-      return `Maze ${s.N} by ${s.N}, difficulty ${DIFF_LABEL[state.difficulty.maze]}. F1 move up, F2 move down, pan left for left, pan right for right. Pan all describes surroundings. On screen, Auto to fork advances to the next junction. F1 plus F4 home. F3 plus F4 help.`;
+      return `Maze ${s.N} by ${s.N}, difficulty ${DIFF_LABEL[state.difficulty.maze]}. On Dot Pad, walls feel solid (8 dots), player feels medium (4 dots in middle), goal feels light (2 dots). F1 move up, F2 move down, pan left for left, pan right for right. Pan all describes surroundings. On screen, Auto to fork advances to the next junction. F1 plus F4 home. F3 plus F4 help.`;
     }
     return 'DotPuzzle Pack. F1 plus F4 to return home. F3 plus F4 for help.';
   }
