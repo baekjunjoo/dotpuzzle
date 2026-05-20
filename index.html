@@ -2422,26 +2422,28 @@
         }
       }
 
-      // 2) 세로 박스 divider — 각 divider cell이 full 6-dot braille cell (0x3F)
-      // dots 7+8 (8-dot mode)은 제외 → underline 등 다른 marker와 구분
+      // 2) 세로 박스 divider — 첫 번째 cell만 (사용자 요청: 16번째 col 제거)
+      // 패턴: 0xFF (full 8-dot, dots 7+8 포함 → "7,8점 살리기")
       vDivs.forEach((divCol, idx) => {
-        const dcolStart = ox + (divCol + 1) * cellW + idx * dt;
+        const dcol = ox + (divCol + 1) * cellW + idx * dt;
         for (let dy = 0; dy < totalH; dy++) {
           const drow = oy + dy;
           if (drow >= DP_H) continue;
-          if (dcolStart < DP_W) cells[drow * DP_W + dcolStart] = 0x3F;
-          if (dt === 2 && dcolStart + 1 < DP_W) cells[drow * DP_W + dcolStart + 1] = 0x3F;
+          if (dcol < DP_W) cells[drow * DP_W + dcol] = 0xFF;
+          // dt === 2여도 두 번째 cell (16번째 col) 비움
         }
       });
 
-      // 3) 가로 박스 divider — 각 divider cell이 full 6-dot braille cell (0x3F)
+      // 3) 가로 박스 divider — 첫 번째 row만 (사용자 요청: 6번째 row 제거)
+      // 패턴: 0xE4 (dots 3+6+7+8 = bottom 2 dot rows of cell)
+      // 교차점에서 vertical 0xFF를 overwrite → row 전체가 strict 0xE4
       hDivs.forEach((divRow, idx) => {
-        const drowStart = oy + (divRow + 1) * cellH + idx * dt;
+        const drow = oy + (divRow + 1) * cellH + idx * dt;
         for (let dx = 0; dx < totalW; dx++) {
           const dcol = ox + dx;
           if (dcol >= DP_W) continue;
-          if (drowStart < DP_H) cells[drowStart * DP_W + dcol] = 0x3F;
-          if (dt === 2 && drowStart + 1 < DP_H) cells[(drowStart + 1) * DP_W + dcol] = 0x3F;
+          if (drow < DP_H) cells[drow * DP_W + dcol] = 0xE4;
+          // dt === 2여도 두 번째 row (6번째 row) 비움
         }
       });
 
