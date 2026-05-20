@@ -555,6 +555,104 @@
     }
     #toast.show { opacity: 1; }
 
+
+    /* Connect popup — redesigned (v0.16) */
+    .modal-connect {
+      background: var(--bg-card);
+      border-radius: 28px;
+      padding: 32px 24px 20px;
+      max-width: 340px;
+      width: 90%;
+      text-align: center;
+      box-shadow: 0 24px 64px rgba(0,0,0,0.25);
+    }
+    .modal-icon {
+      width: 60px; height: 60px;
+      background: var(--bg-soft);
+      border-radius: 18px;
+      margin: 0 auto 16px;
+      display: flex; justify-content: center; align-items: center;
+      color: var(--fg);
+    }
+    .modal-icon svg { width: 32px; height: 32px; }
+    .modal-connect h3 {
+      font-size: 21px; font-weight: 800;
+      letter-spacing: -0.015em;
+      margin: 0 0 8px;
+      color: var(--fg);
+    }
+    .modal-desc {
+      font-size: 13px; color: var(--fg-dim);
+      line-height: 1.55; margin: 0 0 22px;
+      font-weight: 500;
+    }
+    .connect-options {
+      display: flex; flex-direction: column; gap: 8px;
+      margin-bottom: 14px;
+    }
+    .connect-btn {
+      display: flex; align-items: center; gap: 14px;
+      background: var(--fg); color: white;
+      border: 0;
+      border-radius: 18px;
+      padding: 14px 18px;
+      cursor: pointer; font-family: inherit;
+      text-align: left; width: 100%;
+      transition: all 0.15s ease;
+      min-height: 64px;
+    }
+    .connect-btn:hover {
+      background: #2a2a2a;
+      transform: translateY(-1px);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+    }
+    .connect-btn:active { transform: translateY(0); }
+    .connect-btn:focus-visible {
+      outline: 3px solid var(--accent);
+      outline-offset: 3px;
+    }
+    .connect-btn-icon {
+      width: 40px; height: 40px;
+      background: rgba(255,255,255,0.14);
+      border-radius: 12px;
+      display: flex; justify-content: center; align-items: center;
+      flex-shrink: 0;
+      color: white;
+    }
+    .connect-btn-icon svg { width: 22px; height: 22px; }
+    .connect-btn-text {
+      display: flex; flex-direction: column;
+      flex: 1; min-width: 0;
+      gap: 2px;
+    }
+    .connect-btn-title {
+      font-size: 16px; font-weight: 700;
+      letter-spacing: -0.005em;
+      color: white;
+    }
+    .connect-btn-sub {
+      font-size: 11px;
+      color: rgba(255,255,255,0.65);
+      font-weight: 500;
+      letter-spacing: 0.04em;
+    }
+    .connect-btn-arrow {
+      font-size: 24px;
+      color: rgba(255,255,255,0.5);
+      flex-shrink: 0;
+      line-height: 1;
+    }
+    .modal-cancel {
+      width: 100%;
+      padding: 13px;
+    }
+    /* Mobile */
+    @media (max-width: 400px) {
+      .modal-connect { padding: 28px 20px 18px; border-radius: 24px; }
+      .modal-connect h3 { font-size: 19px; }
+      .connect-btn { padding: 12px 14px; min-height: 60px; }
+    }
+
     /* Dot Pad popup */
     .overlay {
       position: fixed; inset: 0; background: rgba(0,0,0,0.4);
@@ -653,16 +751,50 @@
   </main>
 
   <div class="overlay" id="dp-overlay" role="dialog" aria-modal="true" aria-labelledby="dp-modal-title">
-    <div class="modal">
-      <h3 id="dp-modal-title">🔌 CONNECT DOT PAD</h3>
-      <p>Chrome / Edge desktop · HTTPS only. Pair the device near your laptop.</p>
-      <div class="row">
-        <button class="primary-btn" onclick="connectBle()">📶 Bluetooth</button>
-        <button class="primary-btn" onclick="connectUsb()">🔗 USB</button>
+    <div class="modal modal-connect">
+      <div class="modal-icon" aria-hidden="true">
+        <svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+          <rect x="6" y="4" width="20" height="24" rx="3" fill="none" stroke="currentColor" stroke-width="2"/>
+          <circle cx="11" cy="10" r="1.5" fill="currentColor"/>
+          <circle cx="16" cy="10" r="1.5" fill="currentColor"/>
+          <circle cx="21" cy="10" r="1.5" fill="currentColor"/>
+          <circle cx="11" cy="16" r="1.5" fill="currentColor"/>
+          <circle cx="16" cy="16" r="1.5" fill="currentColor"/>
+          <circle cx="21" cy="16" r="1.5" fill="currentColor"/>
+          <circle cx="11" cy="22" r="1.5" fill="currentColor"/>
+          <circle cx="16" cy="22" r="1.5" fill="currentColor"/>
+          <circle cx="21" cy="22" r="1.5" fill="currentColor"/>
+        </svg>
       </div>
-      <p style="margin-top:14px;margin-bottom:0;text-align:right">
-        <button class="ghost-btn" onclick="closeDpOverlay()">Cancel</button>
-      </p>
+      <h3 id="dp-modal-title">Connect Dot Pad</h3>
+      <p class="modal-desc">Chrome or Edge desktop · HTTPS only<br/>Pair the device near your laptop</p>
+      <div class="connect-options">
+        <button class="connect-btn" onclick="connectBle()" type="button" aria-label="Connect via Bluetooth, wireless BLE">
+          <span class="connect-btn-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 2v20l-5-5 5-5-5-5 5-5zm0 6.5l3 3-3 3v-6zm0 9l3-3-3-3v6z" fill="currentColor"/>
+            </svg>
+          </span>
+          <span class="connect-btn-text">
+            <span class="connect-btn-title">Bluetooth</span>
+            <span class="connect-btn-sub">Wireless · BLE</span>
+          </span>
+          <span class="connect-btn-arrow" aria-hidden="true">›</span>
+        </button>
+        <button class="connect-btn" onclick="connectUsb()" type="button" aria-label="Connect via USB cable, wired">
+          <span class="connect-btn-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 1l-3 5h2v9.5l-3-2v-3l1-1h-4l1 1v3l5 3v3l-2 1h6l-2-1v-9l5-3v-3l1-1h-4l1 1v3l-3 2V6h2l-3-5z" fill="currentColor"/>
+            </svg>
+          </span>
+          <span class="connect-btn-text">
+            <span class="connect-btn-title">USB</span>
+            <span class="connect-btn-sub">Wired · Reliable</span>
+          </span>
+          <span class="connect-btn-arrow" aria-hidden="true">›</span>
+        </button>
+      </div>
+      <button class="ghost-btn modal-cancel" onclick="closeDpOverlay()" type="button">Cancel</button>
     </div>
   </div>
 
@@ -2227,9 +2359,10 @@
   // vDivs: 박스 경계가 cells[c]와 cells[c+1] 사이에 들어가는 column index들
   // hDivs: 같은 방식 row
   const SUDOKU_LAYOUT = {
-    4: { cellW: 7, cellH: 2, vDivs: [1], hDivs: [1] },  // 4*7+1=29W, 9H — digit centered [2,3] with 2-cell padding each side
-    6: { cellW: 4, cellH: 1, vDivs: [2], hDivs: [1, 3] },  // 25W, 8H — digit [1,2]
-    9: { cellW: 3, cellH: 1, vDivs: [2, 5], hDivs: [] },  // 29W, 9H — digit [0,1]
+    // divThick = 박스 divider 두께 (cells). 2면 더 명확한 그리드 + 닷패드 전체 채움
+    4: { cellW: 7, cellH: 2, vDivs: [1], hDivs: [1], divThick: 2 },  // 4*7+2=30W, 4*2+2=10H — fills entire 30×10
+    6: { cellW: 4, cellH: 1, vDivs: [2], hDivs: [1, 3], divThick: 2 },  // 6*4+2=26W, 6+4=10H — fills 10 rows
+    9: { cellW: 3, cellH: 1, vDivs: [2, 5], hDivs: [], divThick: 1 },  // 9*3+2=29W, 9H — 2-thick면 31열로 over
   };
 
   // Build 30x10 grid hex from current puzzle — FULL PAD utilization
@@ -2241,15 +2374,16 @@
     if (state.screen === 'sudoku') {
       const s = state.sudoku;
       const L = SUDOKU_LAYOUT[s.N] || SUDOKU_LAYOUT[9];
-      const { cellW, cellH, vDivs, hDivs } = L;
-      const totalW = s.N * cellW + vDivs.length;
-      const totalH = s.N * cellH + hDivs.length;
+      const { cellW, cellH, vDivs, hDivs, divThick } = L;
+      const dt = divThick || 1;
+      const totalW = s.N * cellW + vDivs.length * dt;
+      const totalH = s.N * cellH + hDivs.length * dt;
       const ox = Math.max(0, Math.floor((DP_W - totalW) / 2));
       const oy = Math.max(0, Math.floor((DP_H - totalH) / 2));
 
       // 각 puzzle 셀의 실제 Dot Pad 위치 계산 (divider 누적 offset)
-      function vOff(c) { return vDivs.filter(d => c > d).length; }
-      function hOff(r) { return hDivs.filter(d => r > d).length; }
+      function vOff(c) { return vDivs.filter(d => c > d).length * dt; }
+      function hOff(r) { return hDivs.filter(d => r > d).length * dt; }
 
       // 1) 각 셀 — 점자 숫자 (numeric prefix + digit letter)
       for (let r = 0; r < s.N; r++) {
@@ -2282,12 +2416,8 @@
                 if (ddc + 1 < DP_W && ddr < DP_H) cells[ddr * DP_W + ddc + 1] |= 0xC0;
               }
             }
-          } else {
-            // 빈 셀 — center marker (dot 5 = 중앙 점)
-            const cmc = dcol + Math.floor(cellW / 2);
-            const cmr = drow + Math.floor(cellH / 2);
-            if (cmc < DP_W && cmr < DP_H) cells[cmr * DP_W + cmc] |= 0x10;
           }
+          // 빈 셀은 진짜 empty — center marker 제거 (v0.15의 노이즈 fix)
           // Cursor — blink 상태일 때만 frame 그림
           if (r === s.cursor.r && c === s.cursor.c && state.sudokuBlinkOn) {
             for (let dy = 0; dy < cellH; dy++) for (let dx = 0; dx < cellW; dx++) {
@@ -2304,21 +2434,38 @@
         }
       }
 
-      // 2) 세로 박스 divider — thin line (left column of 4 dots: 1+2+3+7 = 0x47)
+      // 2) 세로 박스 divider
       vDivs.forEach((divCol, idx) => {
-        const dcol = ox + (divCol + 1) * cellW + idx;
+        const dcolStart = ox + (divCol + 1) * cellW + idx * dt;
         for (let dy = 0; dy < totalH; dy++) {
           const drow = oy + dy;
-          if (dcol < DP_W && drow < DP_H) cells[drow * DP_W + dcol] = 0x47;
+          if (drow >= DP_H) continue;
+          if (dt === 1) {
+            // 1-thick: single col, dots 1+2+3+7 (left column 4 dots)
+            if (dcolStart < DP_W) cells[drow * DP_W + dcolStart] = 0x47;
+          } else {
+            // 2-thick: 두 셀의 인접한 col이 만나서 2-dot-wide 연속 vertical bar 형성
+            // first col 우측 (dots 4+5+6+8) + second col 좌측 (dots 1+2+3+7) = continuous
+            if (dcolStart < DP_W) cells[drow * DP_W + dcolStart] = 0xB8;
+            if (dcolStart + 1 < DP_W) cells[drow * DP_W + dcolStart + 1] = 0x47;
+          }
         }
       });
 
-      // 3) 가로 박스 divider — thin line (middle row of 2 dots: 2+5 = 0x12)
+      // 3) 가로 박스 divider
       hDivs.forEach((divRow, idx) => {
-        const drow = oy + (divRow + 1) * cellH + idx;
+        const drowStart = oy + (divRow + 1) * cellH + idx * dt;
         for (let dx = 0; dx < totalW; dx++) {
           const dcol = ox + dx;
-          if (drow < DP_H && dcol < DP_W) cells[drow * DP_W + dcol] = 0x12;
+          if (dcol >= DP_W) continue;
+          if (dt === 1) {
+            // 1-thick: single row, dots 2+5 (middle row of cell)
+            if (drowStart < DP_H) cells[drowStart * DP_W + dcol] = 0x12;
+          } else {
+            // 2-thick: upper cell 바닥 (dots 7+8) + lower cell 위쪽 (dots 1+4) = continuous horizontal bar
+            if (drowStart < DP_H) cells[drowStart * DP_W + dcol] = 0xC0;
+            if (drowStart + 1 < DP_H) cells[(drowStart + 1) * DP_W + dcol] = 0x09;
+          }
         }
       });
 
