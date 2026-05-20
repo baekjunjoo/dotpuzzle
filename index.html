@@ -686,6 +686,7 @@
     dotpadName: '',
     dotpadCursor: 0,
     ttsOn: true,
+    sfxOn: true,
     difficulty: { sudoku: 'easy', minesweeper: 'easy', nonogram: 'easy', maze: 'easy' },
     sudoku: null,
     minesweeper: null,
@@ -851,6 +852,131 @@
     } catch(e){}
   }
 
+
+  // ============================================================
+  // SFX SYSTEM (Web Audio API 합성, 오디오 파일 0개)
+  // ============================================================
+  let _audioCtx = null;
+  function _audio() {
+    if (!_audioCtx) {
+      try { _audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+      catch(e) { return null; }
+    }
+    if (_audioCtx.state === 'suspended') {
+      try { _audioCtx.resume(); } catch(e){}
+    }
+    return _audioCtx;
+  }
+
+  // Envelope tone — frequency Hz, duration sec, oscillator type, peak gain
+  function _tone(freq, duration, type, gain) {
+    if (!state.sfxOn) return;
+    const ctx = _audio();
+    if (!ctx) return;
+    const t = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const g = ctx.createGain();
+    osc.type = type || 'sine';
+    osc.frequency.setValueAtTime(freq, t);
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(gain || 0.12, t + 0.005);
+    g.gain.exponentialRampToValueAtTime(0.001, t + duration);
+    osc.connect(g).connect(ctx.destination);
+    osc.start(t);
+    osc.stop(t + duration + 0.02);
+  }
+
+  // Frequency glide (sweep) — from→to over duration
+  function _glide(fromFreq, toFreq, duration, type, gain) {
+    if (!state.sfxOn) return;
+    const ctx = _audio();
+    if (!ctx) return;
+    const t = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const g = ctx.createGain();
+    osc.type = type || 'sawtooth';
+    osc.frequency.setValueAtTime(fromFreq, t);
+    osc.frequency.exponentialRampToValueAtTime(Math.max(50, toFreq), t + duration);
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(gain || 0.15, t + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.001, t + duration);
+    osc.connect(g).connect(ctx.destination);
+    osc.start(t);
+    osc.stop(t + duration + 0.02);
+  }
+
+  // Note sequence — list of [freq, duration, type?, gain?, delayMs?]
+  function _seq(notes) {
+    if (!state.sfxOn) return;
+    notes.forEach((n, i) => {
+      const delay = n[4] !== undefined ? n[4] : (i * 80);
+      setTimeout(() => _tone(n[0], n[1] || 0.1, n[2] || 'triangle', n[3] || 0.12), delay);
+    });
+  }
+
+  // Noise burst (for explosion-like)
+  function _noise(duration, gain) {
+    if (!state.sfxOn) return;
+    const ctx = _audio();
+    if (!ctx) return;
+    const t = ctx.currentTime;
+    const bufLen = Math.floor(ctx.sampleRate * duration);
+    const buf = ctx.createBuffer(1, bufLen, ctx.sampleRate);
+    const data = buf.getChannelData(0);
+    for (let i = 0; i < bufLen; i++) data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / bufLen, 2);
+    const src = ctx.createBufferSource(); src.buffer = buf;
+    const filt = ctx.createBiquadFilter();
+    filt.type = 'lowpass'; filt.frequency.value = 800;
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(gain || 0.2, t);
+    g.gain.exponentialRampToValueAtTime(0.001, t + duration);
+    src.connect(filt).connect(g).connect(ctx.destination);
+    src.start(t);
+  }
+
+  // Game-specific SFX dictionary
+  const SFX = {
+    // Universal
+    move:       () => _tone(660, 0.04, 'sine', 0.06),
+    back:       () => _tone(330, 0.08, 'sine', 0.08),
+    start:      () => _seq([[523, 0.12], [659, 0.12], [784, 0.18]]),
+    win:        () => _seq([[523, 0.15], [659, 0.15], [784, 0.18], [1047, 0.3]]),
+    lose:       () => _glide(330, 110, 0.5, 'sawtooth', 0.2),
+    toggle:     () => _tone(880, 0.05, 'square', 0.08),
+    // Sudoku
+    digitInput: (n) => _tone(440 + n * 30, 0.1, 'triangle', 0.12),
+    given:      () => _tone(220, 0.08, 'sawtooth', 0.1),  // can't change given
+    erase:      () => _tone(330, 0.06, 'sine', 0.08),
+    checkOk:    () => _seq([[523, 0.12], [659, 0.12], [784, 0.2]]),
+    checkPartial: () => _tone(440, 0.15, 'triangle', 0.1),
+    checkBad:   () => _glide(220, 110, 0.3, 'sawtooth', 0.15),
+    // Minesweeper
+    reveal:     () => _tone(880, 0.06, 'sine', 0.1),
+    revealN:    (n) => _tone(440 + n * 50, 0.1, 'triangle', 0.12),
+    mine:       () => { _noise(0.3, 0.25); _glide(220, 60, 0.4, 'sawtooth', 0.2); },
+    flag:       () => _tone(550, 0.08, 'square', 0.1),
+    unflag:     () => _tone(440, 0.06, 'square', 0.08),
+    safeHint:   () => _seq([[700, 0.1], [900, 0.15]]),
+    // Nonogram
+    fill:       () => _tone(880, 0.1, 'triangle', 0.12),
+    unfill:     () => _tone(660, 0.08, 'triangle', 0.1),
+    xMark:      () => _tone(440, 0.1, 'square', 0.1),
+    lineComplete: () => _seq([[523, 0.12], [659, 0.12], [784, 0.12], [1047, 0.2]]),
+    // Maze
+    step:       () => _tone(330, 0.04, 'sine', 0.06),
+    wall:       () => _glide(180, 100, 0.12, 'sawtooth', 0.18),
+    goal:       () => _seq([[523, 0.15], [659, 0.15], [784, 0.15], [1047, 0.3]]),
+  };
+  window.SFX = SFX;
+
+  function toggleSfx() {
+    state.sfxOn = !state.sfxOn;
+    if (state.sfxOn) SFX.toggle();
+    render();
+  }
+  window.toggleSfx = toggleSfx;
+
+
   // ============================================================
   // HEADER
   // ============================================================
@@ -863,6 +989,7 @@
         <div class="game-eyebrow" style="${state.screen==='launcher'?'display:none':''}">${stageLabel} ${stageNum}</div>
         <div class="header-btns">
           <button class="icon-btn ${state.ttsOn?'active':''}" id="tts-btn" onclick="toggleTts()" type="button" aria-pressed="${state.ttsOn}" aria-label="Toggle voice announcements">Voice</button>
+          <button class="icon-btn ${state.sfxOn?'active':''}" id="sfx-btn" onclick="toggleSfx()" type="button" aria-pressed="${state.sfxOn}" aria-label="Toggle sound effects">FX</button>
           <button class="icon-btn ${state.dotpadConnected?'connected':''}" id="dp-btn" onclick="openDpOverlay()" type="button" aria-label="${state.dotpadConnected?'Dot Pad connected. Click to manage':'Connect Dot Pad'}">${state.dotpadConnected?'● PAD':'PAD'}</button>
         </div>
       </header>
@@ -878,12 +1005,14 @@
   function toggleTts() {
     state.ttsOn = !state.ttsOn;
     if (!state.ttsOn) window.speechSynthesis.cancel();
+    SFX.toggle();
     render();
   }
 
   function goLauncher() {
     state.screen = 'launcher';
     state.dotpadCursor = 0;
+    SFX.back();
     render();
   }
 
@@ -1094,6 +1223,7 @@
     if (name === 'minesweeper') initMinesweeper();
     if (name === 'nonogram') initNonogram();
     if (name === 'maze') initMaze();
+    SFX.start();
     render();
     speak(name + '. ' + (name === 'sudoku' ? 'Fill the grid with one to nine.' :
       name === 'minesweeper' ? 'Find the mines without revealing them.' :
@@ -1198,16 +1328,18 @@
 
   function sudokuClick(r, c) {
     const s = state.sudoku;
-    if (s.given[r][c]) { toast('Given digit'); return; }
+    if (s.given[r][c]) { SFX.given(); toast('Given digit'); return; }
     s.cursor.r = r; s.cursor.c = c; s.mode = 'cell';
+    SFX.move();
     render();
     speak(`Row ${r+1} column ${c+1}. ${s.grid[r][c] || 'empty'}.`);
   }
   function sudokuInput(n) {
     const s = state.sudoku;
     const { r, c } = s.cursor;
-    if (s.given[r][c]) { toast('Given digit'); return; }
+    if (s.given[r][c]) { SFX.given(); toast('Given digit'); return; }
     s.grid[r][c] = n;
+    if (n === 0) SFX.erase(); else SFX.digitInput(n);
     render();
     speak(n === 0 ? 'Erased' : ('Set to ' + n));
   }
@@ -1219,12 +1351,15 @@
       else if (s.grid[r][c] !== s.solution[r][c]) wrong++;
     }
     if (empty === 0 && wrong === 0) {
+      SFX.checkOk();
       toast('☆ Solved!', 3000);
       speak('Solved.');
     } else if (wrong === 0) {
+      SFX.checkPartial();
       toast(empty + ' cells to go');
       speak(empty + ' cells remaining.');
     } else {
+      SFX.checkBad();
       toast(wrong + ' wrong · ' + empty + ' empty');
       speak(wrong + ' wrong, ' + empty + ' empty.');
     }
@@ -1294,6 +1429,7 @@
     if (safeHidden.length === 0) { toast('No safe hidden cells left'); return; }
     const pick = safeHidden[Math.floor(Math.random() * safeHidden.length)];
     s.cursor.r = pick.r; s.cursor.c = pick.c;
+    SFX.safeHint();
     const msg = `Safe cell: row ${pick.r+1} column ${pick.c+1}.`;
     toast(msg, 3000); speak(msg);
     render();
@@ -1379,10 +1515,12 @@
       for (let r2=0; r2<s.N; r2++) for (let c2=0; c2<s.N; c2++)
         if (s.grid[r2][c2] === -1) s.revealed[r2][c2] = true;
       s.gameOver = true; s.won = false;
+      SFX.mine();
       toast('☠ Boom!', 2000); speak('Mine. Game over.');
       render(); return;
     }
     msFlood(r, c);
+    if (s.grid[r][c] === 0) SFX.reveal(); else SFX.revealN(s.grid[r][c]);
     msCheckWin();
     render();
     speak('Row ' + (r+1) + ' col ' + (c+1) + ': ' + (s.grid[r][c] === 0 ? 'safe' : s.grid[r][c] + ' nearby'));
@@ -1403,6 +1541,7 @@
     if (s.gameOver || s.revealed[r][c]) return;
     s.flagged[r][c] = !s.flagged[r][c];
     s.cursor.r = r; s.cursor.c = c;
+    if (s.flagged[r][c]) SFX.flag(); else SFX.unflag();
     render();
     speak(s.flagged[r][c] ? 'Flagged' : 'Unflagged');
   }
@@ -1417,6 +1556,7 @@
     }
     if (safeCells === safeRevealed) {
       s.gameOver = true; s.won = true;
+      SFX.win();
       toast('☆ Solved!', 3000); speak('Solved. Congratulations.');
     }
   }
@@ -1525,6 +1665,7 @@
     const s = state.nonogram;
     s.cursor.r = r; s.cursor.c = c;
     s.state[r][c] = s.state[r][c] === 1 ? 0 : 1;
+    if (s.state[r][c] === 1) SFX.fill(); else SFX.unfill();
     nonoCheckLineComplete(r, c);
     render();
     speak(s.state[r][c] === 1 ? 'Filled' : 'Empty');
@@ -1541,6 +1682,7 @@
       }
       if (rowOk) {
         s.completedRows.add(r);
+        SFX.lineComplete();
         setTimeout(() => speak(`Row ${r+1} complete.`), 200);
         toast(`✓ Row ${r+1} complete`, 1500);
       }
@@ -1553,6 +1695,7 @@
       }
       if (colOk) {
         s.completedCols.add(c);
+        SFX.lineComplete();
         setTimeout(() => speak(`Column ${c+1} complete.`), 500);
         toast(`✓ Column ${c+1} complete`, 1500);
       }
@@ -1586,6 +1729,7 @@
     const s = state.nonogram;
     s.cursor.r = r; s.cursor.c = c;
     s.state[r][c] = s.state[r][c] === 2 ? 0 : 2;
+    SFX.xMark();
     render();
     speak(s.state[r][c] === 2 ? 'X marked' : 'Cleared');
   }
@@ -1597,8 +1741,8 @@
       const actual = s.state[r][c] === 1;
       if (expected !== actual) { ok = false; }
     }
-    if (ok) { toast('☆ Picture revealed!', 3000); speak('Solved.'); }
-    else { toast('Not quite there'); speak('Not yet.'); }
+    if (ok) { SFX.win(); toast('☆ Picture revealed!', 3000); speak('Solved.'); }
+    else { SFX.checkPartial(); toast('Not quite there'); speak('Not yet.'); }
   }
 
   // ============================================================
@@ -1669,12 +1813,15 @@
     if (s.won) return;
     const nr = s.player.r + dr;
     const nc = s.player.c + dc;
-    if (nr<0||nr>=s.N||nc<0||nc>=s.N) return;
-    if (s.grid[nr][nc] === 1) { toast('Wall'); speak('Wall.'); return; }
+    if (nr<0||nr>=s.N||nc<0||nc>=s.N) { SFX.wall(); return; }
+    if (s.grid[nr][nc] === 1) { SFX.wall(); toast('Wall'); speak('Wall.'); return; }
     s.player.r = nr; s.player.c = nc;
     if (s.player.r === s.goal.r && s.player.c === s.goal.c) {
       s.won = true;
+      SFX.goal();
       toast('☆ Reached the goal!', 3000); speak('Goal reached.');
+    } else {
+      SFX.step();
     }
     render();
     speak(['up','down','left','right'][dr === -1 ? 0 : dr === 1 ? 1 : dc === -1 ? 2 : 3] + (s.won ? '. Goal reached.' : '.'));
@@ -2301,6 +2448,7 @@
         state.dotpadConnected = true;
         state.dotpadDevice = connected;
         state.dotpadName = device.name || 'Dot Pad';
+        SFX.win();
         closeDpOverlay();
         speak('Dot Pad connected. F1 and F2 move cursor. F3 select. F4 toggle mark.');
         render();
@@ -2321,6 +2469,7 @@
         state.dotpadConnected = true;
         state.dotpadDevice = connected;
         state.dotpadName = 'USB Dot Pad';
+        SFX.win();
         closeDpOverlay();
         speak('Dot Pad connected. F1 and F2 move cursor. F3 select. F4 toggle mark.');
         render();
