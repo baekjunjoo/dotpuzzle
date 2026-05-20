@@ -2401,21 +2401,9 @@
               if (ddc < DP_W) cells[ddr * DP_W + ddc] = BRL_NUM_PREFIX;
               if (ddc + 1 < DP_W) cells[ddr * DP_W + ddc + 1] = BRL_NUM[v];
             }
-            // Given 숫자 underline (dots 7+8 — 점자 7,8번 점)
-            if (s.given[r][c]) {
-              if (cellH >= 2) {
-                // cellH=2: underline은 cell 아래쪽 row의 digit 위치
-                const underR = drow + cellH - 1;
-                if (underR < DP_H) {
-                  if (ddc < DP_W) cells[underR * DP_W + ddc] |= 0xC0;
-                  if (ddc + 1 < DP_W) cells[underR * DP_W + ddc + 1] |= 0xC0;
-                }
-              } else {
-                // cellH=1: digit cell에 직접 dots 7+8 추가 (안 겹침)
-                if (ddc < DP_W && ddr < DP_H) cells[ddr * DP_W + ddc] |= 0xC0;
-                if (ddc + 1 < DP_W && ddr < DP_H) cells[ddr * DP_W + ddc + 1] |= 0xC0;
-              }
-            }
+            // Given underline 제거 (v0.17) — 노이즈 원인.
+            // given vs user 구분은 voice/SFX로 충분 (cursor 이동 시 "given X" / "user X" 발화,
+            // given에 입력 시도 시 SFX.given 낮은 buzz + "Cannot edit fixed cell")
           }
           // 빈 셀은 진짜 empty — center marker 제거 (v0.15의 노이즈 fix)
           // Cursor — blink 상태일 때만 frame 그림
@@ -2434,36 +2422,35 @@
         }
       }
 
-      // 2) 세로 박스 divider
+      // 2) 세로 박스 divider — 2 distinct thin lines (each cell's left col only)
       vDivs.forEach((divCol, idx) => {
         const dcolStart = ox + (divCol + 1) * cellW + idx * dt;
         for (let dy = 0; dy < totalH; dy++) {
           const drow = oy + dy;
           if (drow >= DP_H) continue;
           if (dt === 1) {
-            // 1-thick: single col, dots 1+2+3+7 (left column 4 dots)
-            if (dcolStart < DP_W) cells[drow * DP_W + dcolStart] = 0x47;
+            // 1-thick: single col, dots 1+2+3 (left column 3 dots, no 8-dot extras)
+            if (dcolStart < DP_W) cells[drow * DP_W + dcolStart] = 0x07;
           } else {
-            // 2-thick: 두 셀의 인접한 col이 만나서 2-dot-wide 연속 vertical bar 형성
-            // first col 우측 (dots 4+5+6+8) + second col 좌측 (dots 1+2+3+7) = continuous
-            if (dcolStart < DP_W) cells[drow * DP_W + dcolStart] = 0xB8;
-            if (dcolStart + 1 < DP_W) cells[drow * DP_W + dcolStart + 1] = 0x47;
+            // 2-thick: both cells use LEFT column only (0x07) → 2 distinct vertical lines with 1-col gap between
+            if (dcolStart < DP_W) cells[drow * DP_W + dcolStart] = 0x07;
+            if (dcolStart + 1 < DP_W) cells[drow * DP_W + dcolStart + 1] = 0x07;
           }
         }
       });
 
-      // 3) 가로 박스 divider
+      // 3) 가로 박스 divider — 2 distinct thin lines (each row's top dots only)
       hDivs.forEach((divRow, idx) => {
         const drowStart = oy + (divRow + 1) * cellH + idx * dt;
         for (let dx = 0; dx < totalW; dx++) {
           const dcol = ox + dx;
           if (dcol >= DP_W) continue;
           if (dt === 1) {
-            // 1-thick: single row, dots 2+5 (middle row of cell)
-            if (drowStart < DP_H) cells[drowStart * DP_W + dcol] = 0x12;
+            // 1-thick: single row, dots 1+4 (top row of cell)
+            if (drowStart < DP_H) cells[drowStart * DP_W + dcol] = 0x09;
           } else {
-            // 2-thick: upper cell 바닥 (dots 7+8) + lower cell 위쪽 (dots 1+4) = continuous horizontal bar
-            if (drowStart < DP_H) cells[drowStart * DP_W + dcol] = 0xC0;
+            // 2-thick: both rows use TOP dots only (0x09) → 2 distinct horizontal lines with row-gap
+            if (drowStart < DP_H) cells[drowStart * DP_W + dcol] = 0x09;
             if (drowStart + 1 < DP_H) cells[(drowStart + 1) * DP_W + dcol] = 0x09;
           }
         }
@@ -2597,7 +2584,7 @@
     if (state.screen === 'sudoku') {
       const s = state.sudoku;
       if (s.N === 4) {
-        return `Sudoku 4 by 4 Easy. Pan left and right move to previous and next cell, typewriter style. F1, F2, F3, F4 directly enter digits 1, 2, 3, 4. Pressing the same digit again clears the cell. Given cells cannot be edited and show an underline on Dot Pad. F1 plus F2 reads current row. F2 plus F3 reads current column. F1 plus F3 reads the 2 by 2 box. F2 plus F4 checks the puzzle. F1 plus F4 home. F3 plus F4 help. Cursor blinks on Dot Pad to mark your position.`;
+        return `Sudoku 4 by 4 Easy. Pan left and right move to previous and next cell, typewriter style. F1, F2, F3, F4 directly enter digits 1, 2, 3, 4. Pressing the same digit again clears the cell. Given cells cannot be edited; voice announces 'given' when you move to them and 'Cannot edit fixed cell' if you try to change them. F1 plus F2 reads current row. F2 plus F3 reads current column. F1 plus F3 reads the 2 by 2 box. F2 plus F4 checks the puzzle. F1 plus F4 home. F3 plus F4 help. Cursor blinks on Dot Pad to mark your position.`;
       }
       return `Sudoku ${s.N} by ${s.N}, difficulty ${DIFF_LABEL[state.difficulty.sudoku]}. F1 row up, F2 row down, pan left and right for columns. F3 cycles digit at cursor. F4 checks the puzzle. On screen, use Read row, What's missing, Check buttons. F1 plus F4 home. F3 plus F4 help.`;
     }
