@@ -670,9 +670,20 @@
 
   <!-- Dot Pad SDK (Web SDK 3.0.0) -->
   <script type="module">
-    import * as DotPad from './dotpad-sdk/DotPadSDK-3.0.0.js';
-    window.DotPad = DotPad;
-    console.log('[DotPad] SDK loaded');
+    // Dot Pad Web SDK 3.0.0 — ES module 명시 import + 클래스 인스턴스화 (Detective Voice 패턴)
+    try {
+      const { DotPadSDK, DotPadScanner, DisplayMode, DataCodes, KeyCodes }
+        = await import('./dotpad-sdk/DotPadSDK-3.0.0.js');
+      window.DotPad = {
+        sdk: new DotPadSDK(),
+        scanner: new DotPadScanner(),
+        DisplayMode, DataCodes, KeyCodes,
+      };
+      console.log('[DotPad] SDK loaded — version 3.0.0');
+    } catch (err) {
+      console.error('[DotPad] SDK load failed:', err);
+      window._dotpadLoadError = err.message || String(err);
+    }
   </script>
 
   <script>
@@ -2433,7 +2444,17 @@
   // ============================================================
   // DOT PAD CONNECT
   // ============================================================
-  function dotpadAvailable() { return !!(window.DotPad && window.DotPad.sdk); }
+  function dotpadAvailable() {
+    if (window._dotpadLoadError) {
+      alert('Dot Pad SDK failed to load: ' + window._dotpadLoadError);
+      return false;
+    }
+    if (!(window.DotPad && window.DotPad.sdk)) {
+      alert('Dot Pad SDK still loading — please wait a moment and try again.');
+      return false;
+    }
+    return true;
+  }
   function openDpOverlay() { $('dp-overlay').classList.add('active'); }
   function closeDpOverlay() { $('dp-overlay').classList.remove('active'); }
 
