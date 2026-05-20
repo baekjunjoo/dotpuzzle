@@ -698,6 +698,7 @@
     dotpadCursor: 0,
     ttsOn: true,
     sfxOn: true,
+    sudokuBlinkOn: true,
     difficulty: { sudoku: 'easy', minesweeper: 'easy', nonogram: 'easy', maze: 'easy' },
     sudoku: null,
     minesweeper: null,
@@ -1023,6 +1024,7 @@
   function goLauncher() {
     state.screen = 'launcher';
     state.dotpadCursor = 0;
+    stopSudokuBlink();
     SFX.back();
     render();
   }
@@ -1230,7 +1232,7 @@
   function startGame(name) {
     state.screen = name;
     state.dotpadCursor = 0;
-    if (name === 'sudoku') initSudoku();
+    if (name === 'sudoku') { initSudoku(); startSudokuBlink(); } else stopSudokuBlink();
     if (name === 'minesweeper') initMinesweeper();
     if (name === 'nonogram') initNonogram();
     if (name === 'maze') initMaze();
@@ -1337,13 +1339,130 @@
   window.sudokuReadRow = sudokuReadRow;
   window.sudokuWhatMissing = sudokuWhatMissing;
 
+  // ============================================================
+  // SUDOKU 4×4 전용 보조 (v0.15)
+  // ============================================================
+  function sudokuAnnounceCursor() {
+    const s = state.sudoku;
+    if (!s) return;
+    const { r, c } = s.cursor;
+    const v = s.grid[r][c];
+    let status;
+    if (v === 0) status = 'empty';
+    else if (s.given[r][c]) status = 'given ' + v;
+    else status = 'user ' + v;
+    speak(`Row ${r+1} column ${c+1}, ${status}`);
+  }
+
+  function sudokuNextCell() {
+    const s = state.sudoku;
+    const total = s.N * s.N;
+    let idx = s.cursor.r * s.N + s.cursor.c;
+    idx = (idx + 1) % total;
+    s.cursor.r = Math.floor(idx / s.N);
+    s.cursor.c = idx % s.N;
+    SFX.move();
+    render();
+    sudokuAnnounceCursor();
+  }
+
+  function sudokuPrevCell() {
+    const s = state.sudoku;
+    const total = s.N * s.N;
+    let idx = s.cursor.r * s.N + s.cursor.c;
+    idx = (idx - 1 + total) % total;
+    s.cursor.r = Math.floor(idx / s.N);
+    s.cursor.c = idx % s.N;
+    SFX.move();
+    render();
+    sudokuAnnounceCursor();
+  }
+
+  // 숫자 n 입력 (toggle: 같은 숫자면 erase)
+  function sudokuInputN(n) {
+    const s = state.sudoku;
+    if (!s) return;
+    const { r, c } = s.cursor;
+    if (s.given[r][c]) {
+      SFX.given();
+      speak('Cannot edit fixed cell');
+      toast('Cannot edit fixed cell');
+      return;
+    }
+    if (s.grid[r][c] === n) {
+      // Toggle — same digit → erase
+      s.grid[r][c] = 0;
+      SFX.erase();
+      speak('Cleared, empty');
+    } else {
+      s.grid[r][c] = n;
+      SFX.digitInput(n);
+      speak(n + ' entered');
+    }
+    render();
+  }
+
+  // 행 읽기 (F1+F2 long-press 대체)
+  function sudokuReadCol() {
+    const s = state.sudoku;
+    if (!s) return;
+    const c = s.cursor.c;
+    const vals = [];
+    for (let r = 0; r < s.N; r++) {
+      const v = s.grid[r][c];
+      vals.push(v === 0 ? 'empty' : v.toString());
+    }
+    const msg = `Column ${c+1}: ${vals.join(', ')}`;
+    toast(msg, 4000); speak(msg);
+  }
+
+  function sudokuReadBox() {
+    const s = state.sudoku;
+    if (!s) return;
+    const { r, c } = s.cursor;
+    const boxR = Math.floor(r / s.box.rows) * s.box.rows;
+    const boxC = Math.floor(c / s.box.cols) * s.box.cols;
+    const vals = [];
+    for (let dr = 0; dr < s.box.rows; dr++) {
+      for (let dc = 0; dc < s.box.cols; dc++) {
+        const v = s.grid[boxR+dr][boxC+dc];
+        vals.push(v === 0 ? 'empty' : v.toString());
+      }
+    }
+    const msg = `${s.box.rows} by ${s.box.cols} box: ${vals.join(', ')}`;
+    toast(msg, 4000); speak(msg);
+  }
+
+  // Cursor blink interval
+  let _sudokuBlinkInterval = null;
+  function startSudokuBlink() {
+    if (_sudokuBlinkInterval) return;
+    _sudokuBlinkInterval = setInterval(() => {
+      if (state.screen !== 'sudoku' || !state.dotpadConnected) return;
+      state.sudokuBlinkOn = !state.sudokuBlinkOn;
+      pushToDotpad();
+    }, 600);
+  }
+  function stopSudokuBlink() {
+    if (_sudokuBlinkInterval) {
+      clearInterval(_sudokuBlinkInterval);
+      _sudokuBlinkInterval = null;
+    }
+    state.sudokuBlinkOn = true;
+  }
+  window.sudokuInputN = sudokuInputN;
+  window.sudokuReadCol = sudokuReadCol;
+  window.sudokuReadBox = sudokuReadBox;
+  window.sudokuPrevCell = sudokuPrevCell;
+  window.sudokuNextCell = sudokuNextCell;
+  window.sudokuAnnounceCursor = sudokuAnnounceCursor;
+
   function sudokuClick(r, c) {
     const s = state.sudoku;
-    if (s.given[r][c]) { SFX.given(); toast('Given digit'); return; }
     s.cursor.r = r; s.cursor.c = c; s.mode = 'cell';
     SFX.move();
     render();
-    speak(`Row ${r+1} column ${c+1}. ${s.grid[r][c] || 'empty'}.`);
+    sudokuAnnounceCursor();
   }
   function sudokuInput(n) {
     const s = state.sudoku;
@@ -2138,27 +2257,47 @@
           const v = s.grid[r][c];
           const dcol = ox + c * cellW + vOff(c);
           const drow = oy + r * cellH + hOff(r);
+          const padX = Math.floor((cellW - 2) / 2);
+          const padY = Math.floor((cellH - 1) / 2);
+          const ddc = dcol + padX;
+          const ddr = drow + padY;
           if (v && BRL_NUM[v] !== undefined) {
-            // 디지트 (2 cells wide) 를 cellW 안에서 가로 중앙 + 세로 중앙
-            const padX = Math.floor((cellW - 2) / 2);
-            const padY = Math.floor((cellH - 1) / 2);
-            const ddc = dcol + padX;
-            const ddr = drow + padY;
+            // 디지트 — numeric prefix + letter, cellW 안에서 가로/세로 중앙
             if (ddr < DP_H) {
               if (ddc < DP_W) cells[ddr * DP_W + ddc] = BRL_NUM_PREFIX;
               if (ddc + 1 < DP_W) cells[ddr * DP_W + ddc + 1] = BRL_NUM[v];
             }
+            // Given 숫자 underline (dots 7+8 — 점자 7,8번 점)
+            if (s.given[r][c]) {
+              if (cellH >= 2) {
+                // cellH=2: underline은 cell 아래쪽 row의 digit 위치
+                const underR = drow + cellH - 1;
+                if (underR < DP_H) {
+                  if (ddc < DP_W) cells[underR * DP_W + ddc] |= 0xC0;
+                  if (ddc + 1 < DP_W) cells[underR * DP_W + ddc + 1] |= 0xC0;
+                }
+              } else {
+                // cellH=1: digit cell에 직접 dots 7+8 추가 (안 겹침)
+                if (ddc < DP_W && ddr < DP_H) cells[ddr * DP_W + ddc] |= 0xC0;
+                if (ddc + 1 < DP_W && ddr < DP_H) cells[ddr * DP_W + ddc + 1] |= 0xC0;
+              }
+            }
+          } else {
+            // 빈 셀 — center marker (dot 5 = 중앙 점)
+            const cmc = dcol + Math.floor(cellW / 2);
+            const cmr = drow + Math.floor(cellH / 2);
+            if (cmc < DP_W && cmr < DP_H) cells[cmr * DP_W + cmc] |= 0x10;
           }
-          // Cursor: 셀 외곽 전체 frame
-          if (r === s.cursor.r && c === s.cursor.c) {
+          // Cursor — blink 상태일 때만 frame 그림
+          if (r === s.cursor.r && c === s.cursor.c && state.sudokuBlinkOn) {
             for (let dy = 0; dy < cellH; dy++) for (let dx = 0; dx < cellW; dx++) {
               const rr = drow + dy, cc = dcol + dx;
               if (cc < 0 || cc >= DP_W || rr < 0 || rr >= DP_H) continue;
               let mark = 0;
-              if (dy === 0) mark |= 0x09; // top dots 1+4
-              if (dy === cellH - 1) mark |= 0xC0; // bottom dots 7+8 (8-dot mode)
-              if (dx === 0) mark |= 0x47; // left col 1+2+3+7
-              if (dx === cellW - 1) mark |= 0xB8; // right col 4+5+6+8
+              if (dy === 0) mark |= 0x09;
+              if (dy === cellH - 1) mark |= 0xC0;
+              if (dx === 0) mark |= 0x47;
+              if (dx === cellW - 1) mark |= 0xB8;
               cells[rr * DP_W + cc] |= mark;
             }
           }
@@ -2310,7 +2449,10 @@
     }
     if (state.screen === 'sudoku') {
       const s = state.sudoku;
-      return `Sudoku ${s.N} by ${s.N}, difficulty ${DIFF_LABEL[state.difficulty.sudoku]}. Each filled cell on Dot Pad shows numeric prefix plus letter, centered. Box boundaries marked with thin single-line dot rows or columns. F1 row up, F2 row down, pan left and right for columns. F3 cycles digit at cursor. F4 checks the puzzle. On screen, use Read row, What's missing, Check buttons. F1 plus F4 home. F3 plus F4 help.`;
+      if (s.N === 4) {
+        return `Sudoku 4 by 4 Easy. Pan left and right move to previous and next cell, typewriter style. F1, F2, F3, F4 directly enter digits 1, 2, 3, 4. Pressing the same digit again clears the cell. Given cells cannot be edited and show an underline on Dot Pad. F1 plus F2 reads current row. F2 plus F3 reads current column. F1 plus F3 reads the 2 by 2 box. F2 plus F4 checks the puzzle. F1 plus F4 home. F3 plus F4 help. Cursor blinks on Dot Pad to mark your position.`;
+      }
+      return `Sudoku ${s.N} by ${s.N}, difficulty ${DIFF_LABEL[state.difficulty.sudoku]}. F1 row up, F2 row down, pan left and right for columns. F3 cycles digit at cursor. F4 checks the puzzle. On screen, use Read row, What's missing, Check buttons. F1 plus F4 home. F3 plus F4 help.`;
     }
     if (state.screen === 'minesweeper') {
       const s = state.minesweeper;
@@ -2365,6 +2507,15 @@
     // 전역 콤보 키 — A.T. Guys 패턴
     if (keyCode === KC.KeyFunction34) { announceContextHelp(); return; }
     if (keyCode === KC.KeyFunction14) { goHomeShortcut(); return; }
+
+    // Sudoku 4×4 전용 콤보 키 (long-press 대체)
+    if (state.screen === 'sudoku' && state.sudoku && state.sudoku.N === 4) {
+      if (keyCode === KC.KeyFunction12) { sudokuReadRow(); return; }
+      if (keyCode === KC.KeyFunction23) { sudokuReadCol(); return; }
+      if (keyCode === KC.KeyFunction13) { sudokuReadBox(); return; }
+      if (keyCode === KC.KeyFunction24) { sudokuCheck(); return; }
+    }
+
     if (state.screen === 'launcher') {
       // F1/F2 = navigate game cards · F3 = select
       const cards = Array.from(document.querySelectorAll('.game-card'));
@@ -2385,6 +2536,17 @@
     }
     if (state.screen === 'sudoku') {
       const s = state.sudoku;
+      if (s.N === 4) {
+        // 4×4 전용 — F1-F4 = 숫자 1-4 직접 입력 (토글), Pan L/R = typewriter
+        if (keyCode === KC.PanningLeft) { sudokuPrevCell(); return; }
+        if (keyCode === KC.PanningRight) { sudokuNextCell(); return; }
+        if (keyCode === KC.KeyFunction1) { sudokuInputN(1); return; }
+        if (keyCode === KC.KeyFunction2) { sudokuInputN(2); return; }
+        if (keyCode === KC.KeyFunction3) { sudokuInputN(3); return; }
+        if (keyCode === KC.KeyFunction4) { sudokuInputN(4); return; }
+        return;
+      }
+      // 6×6 / 9×9 기존 매핑 유지
       if (keyCode === KC.KeyFunction1) s.cursor.r = (s.cursor.r - 1 + s.N) % s.N;
       else if (keyCode === KC.KeyFunction2) s.cursor.r = (s.cursor.r + 1) % s.N;
       else if (keyCode === KC.PanningLeft) s.cursor.c = (s.cursor.c - 1 + s.N) % s.N;
@@ -2536,13 +2698,22 @@
       else if (e.key === 'ArrowRight') { e.preventDefault(); mazeMove(0, 1); }
     } else if (state.screen === 'sudoku' && !e.target.matches('input, textarea')) {
       const s = state.sudoku;
-      if (e.key === 'ArrowUp') { e.preventDefault(); s.cursor.r = (s.cursor.r - 1 + s.N) % s.N; render(); }
-      else if (e.key === 'ArrowDown') { e.preventDefault(); s.cursor.r = (s.cursor.r + 1) % s.N; render(); }
-      else if (e.key === 'ArrowLeft') { e.preventDefault(); s.cursor.c = (s.cursor.c - 1 + s.N) % s.N; render(); }
-      else if (e.key === 'ArrowRight') { e.preventDefault(); s.cursor.c = (s.cursor.c + 1) % s.N; render(); }
+      if (e.key === 'ArrowUp') { e.preventDefault(); s.cursor.r = (s.cursor.r - 1 + s.N) % s.N; render(); SFX.move(); sudokuAnnounceCursor(); }
+      else if (e.key === 'ArrowDown') { e.preventDefault(); s.cursor.r = (s.cursor.r + 1) % s.N; render(); SFX.move(); sudokuAnnounceCursor(); }
+      else if (e.key === 'ArrowLeft') { e.preventDefault();
+        if (s.N === 4) sudokuPrevCell();
+        else { s.cursor.c = (s.cursor.c - 1 + s.N) % s.N; render(); SFX.move(); }
+      }
+      else if (e.key === 'ArrowRight') { e.preventDefault();
+        if (s.N === 4) sudokuNextCell();
+        else { s.cursor.c = (s.cursor.c + 1) % s.N; render(); SFX.move(); }
+      }
       else if (/^[0-9]$/.test(e.key)) {
         const n = parseInt(e.key);
-        if (n <= s.N) sudokuInput(n);
+        if (n > 0 && n <= s.N) {
+          if (s.N === 4) sudokuInputN(n); // 4×4 toggle
+          else sudokuInput(n);
+        } else if (n === 0) sudokuInput(0);
       }
     } else if ((state.screen === 'minesweeper' || state.screen === 'nonogram') && !e.target.matches('input, textarea')) {
       const s = state.screen === 'minesweeper' ? state.minesweeper : state.nonogram;
