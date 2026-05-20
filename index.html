@@ -2422,37 +2422,26 @@
         }
       }
 
-      // 2) 세로 박스 divider — 2 distinct thin lines (each cell's left col only)
+      // 2) 세로 박스 divider — 각 divider cell이 full 6-dot braille cell (0x3F)
+      // dots 7+8 (8-dot mode)은 제외 → underline 등 다른 marker와 구분
       vDivs.forEach((divCol, idx) => {
         const dcolStart = ox + (divCol + 1) * cellW + idx * dt;
         for (let dy = 0; dy < totalH; dy++) {
           const drow = oy + dy;
           if (drow >= DP_H) continue;
-          if (dt === 1) {
-            // 1-thick: single col, dots 1+2+3 (left column 3 dots, no 8-dot extras)
-            if (dcolStart < DP_W) cells[drow * DP_W + dcolStart] = 0x07;
-          } else {
-            // 2-thick: both cells use LEFT column only (0x07) → 2 distinct vertical lines with 1-col gap between
-            if (dcolStart < DP_W) cells[drow * DP_W + dcolStart] = 0x07;
-            if (dcolStart + 1 < DP_W) cells[drow * DP_W + dcolStart + 1] = 0x07;
-          }
+          if (dcolStart < DP_W) cells[drow * DP_W + dcolStart] = 0x3F;
+          if (dt === 2 && dcolStart + 1 < DP_W) cells[drow * DP_W + dcolStart + 1] = 0x3F;
         }
       });
 
-      // 3) 가로 박스 divider — 2 distinct thin lines (each row's top dots only)
+      // 3) 가로 박스 divider — 각 divider cell이 full 6-dot braille cell (0x3F)
       hDivs.forEach((divRow, idx) => {
         const drowStart = oy + (divRow + 1) * cellH + idx * dt;
         for (let dx = 0; dx < totalW; dx++) {
           const dcol = ox + dx;
           if (dcol >= DP_W) continue;
-          if (dt === 1) {
-            // 1-thick: single row, dots 1+4 (top row of cell)
-            if (drowStart < DP_H) cells[drowStart * DP_W + dcol] = 0x09;
-          } else {
-            // 2-thick: both rows use TOP dots only (0x09) → 2 distinct horizontal lines with row-gap
-            if (drowStart < DP_H) cells[drowStart * DP_W + dcol] = 0x09;
-            if (drowStart + 1 < DP_H) cells[(drowStart + 1) * DP_W + dcol] = 0x09;
-          }
+          if (drowStart < DP_H) cells[drowStart * DP_W + dcol] = 0x3F;
+          if (dt === 2 && drowStart + 1 < DP_H) cells[(drowStart + 1) * DP_W + dcol] = 0x3F;
         }
       });
 
