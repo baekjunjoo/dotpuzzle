@@ -2621,18 +2621,26 @@
       const totalW = cellW * Math.min(s.N, colsShown);
       const offsetX = Math.max(0, Math.floor((DP_W - totalW) / 2));
       const offsetY = (s.N <= rowsShown) ? Math.floor((DP_H - cellH * s.N) / 2) : 0;
-      // Ball pattern (2×2 braille cells = 4×8 dot grid)
-      // Leaves one dot-column empty on each side so the open corridor the ball
-      // is passing through stays felt as empty space adjacent to the ball.
-      //   . # # .         middle 2 columns filled top→bottom, outer cols empty
-      //   . # # .         cell(0,0): col 1 dots 4+5+6+8 = bits 3,4,5,7 = 0xB8
-      //   . # # .         cell(1,0): col 0 dots 1+2+3+7 = bits 0,1,2,6 = 0x47
-      //   . # # .         cell(0,1): same as (0,0) = 0xB8
-      //   . # # .         cell(1,1): same as (1,0) = 0x47
+      // Wall = 1-dot-thick perimeter outline of the 2×2 maze cell (4×8 dot grid).
+      // Cell encoding for the 4-corner frame:
+      //   TL: top row + left col = 0x4F
+      //   TR: top row + right col = 0xB9
+      //   BL: bottom row + left col = 0xC7
+      //   BR: bottom row + right col = 0xF8
+      const WALL = [[0x4F, 0xB9], [0xC7, 0xF8]];
+      // Player = cross / plus shape (십자).
+      // 2×2 braille cells = 4×8 dot grid; vertical bar fills middle 2 cols (rows
+      // 0–7), horizontal bar fills middle 2 rows (cols 0–3) — overlapping at
+      // the center to form a clean plus that's tactile-distinct from walls.
       //   . # # .
       //   . # # .
       //   . # # .
-      const BALL = [[0xB8, 0x47], [0xB8, 0x47]];
+      //   # # # #     horizontal arm (row 3)
+      //   # # # #     horizontal arm (row 4)
+      //   . # # .
+      //   . # # .
+      //   . # # .
+      const BALL = [[0xF8, 0xC7], [0xB9, 0x4F]];
       // Goal pattern — hollow square (top/bottom borders + side bars) so it
       // feels like a "frame" instead of a solid block
       //   # # # #   cell(0,0): dot 1+2+3+4 (top + left)        → 0x0F
@@ -2649,8 +2657,19 @@
         for (let c = 0; c < Math.min(s.N, colsShown); c++) {
           const col = offsetX + c * cellW;
           if (s.grid[r][c] === 1) {
-            // Wall — solid 2×2 block (8 dots per cell × 4 cells = 32 dots up)
-            dpSetBlock(cells, col, row, cellW, cellH, 0xFF);
+            // Wall = 1-dot-thick grid outline (frame around the 4×8 dot grid).
+            // Adjacent walls naturally form a continuous grid lattice, while
+            // isolated walls show as hollow rectangles — gives the maze a
+            // "graph paper" feel instead of solid filled blocks.
+            //   # # # #
+            //   # . . #
+            //   # . . #
+            //   # . . #
+            //   # . . #
+            //   # . . #
+            //   # . . #
+            //   # # # #
+            dpSetBlock(cells, col, row, cellW, cellH, WALL);
           }
           if (s.goal.r === r && s.goal.c === c) {
             dpSetBlock(cells, col, row, cellW, cellH, GOAL);
