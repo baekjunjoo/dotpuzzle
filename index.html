@@ -129,8 +129,28 @@
     .brand {
       font-size: 11px; letter-spacing: 0.18em; color: var(--fg-dim);
       font-weight: 700;
+      display: inline-flex; align-items: center; gap: 8px;
     }
     .brand b { color: var(--fg); }
+    /* BETA chip — sits next to brand or back button to signal pre-release */
+    .beta-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 3px 8px;
+      font-size: 9px;
+      font-weight: 800;
+      letter-spacing: 0.18em;
+      color: #ff7a45;                       /* warm orange */
+      background: rgba(255, 122, 69, 0.12);
+      border: 1px solid rgba(255, 122, 69, 0.5);
+      border-radius: 999px;
+      line-height: 1;
+      text-transform: uppercase;
+      vertical-align: middle;
+    }
+    .brand-row {
+      display: inline-flex; align-items: center; gap: 8px;
+    }
     .header-btns { display: flex; gap: 6px; align-items: center; }
     .icon-btn {
       background: var(--bg-card); border: 1px solid var(--line);
@@ -985,14 +1005,44 @@
     clearTimeout(t._h);
     t._h = setTimeout(() => t.classList.remove('show'), ms);
   }
+  // Voice quality — same selection logic as DotPet so English narration
+  // sounds natural (Google US English / Samantha / MS Neural — NOT the
+  // novelty voices like Albert, Bahh, Boing, Zarvox, etc.)
+  let _preferredVoiceEn = null;
+  function _loadVoices() {
+    if (!window.speechSynthesis) return;
+    const voices = speechSynthesis.getVoices();
+    const en = voices.filter(v => v.lang && v.lang.startsWith('en'));
+    const isLowQuality = (name) => /albert|bahh|bells|boing|bubbles|cellos|deranged|good news|hysterical|junior|pipe organ|trinoids|whisper|zarvox|bad news|kathy/i.test(name);
+    _preferredVoiceEn =
+      en.find(v => /Google US English/i.test(v.name)) ||
+      en.find(v => /^(Samantha|Ava|Alex|Karen|Allison|Susan|Tessa)$/i.test(v.name) && v.lang === 'en-US') ||
+      en.find(v => /^(Samantha|Ava|Alex|Karen|Allison|Susan|Tessa)/i.test(v.name)) ||
+      en.find(v => /Aria|Jenny|Guy|Davis|Sara|Emma/i.test(v.name) && /Neural|Online/i.test(v.name)) ||
+      en.find(v => v.lang === 'en-US' && v.default && !isLowQuality(v.name)) ||
+      en.find(v => v.lang === 'en-US' && !isLowQuality(v.name)) ||
+      en.find(v => !isLowQuality(v.name)) ||
+      en[0];
+  }
+  if (window.speechSynthesis) {
+    speechSynthesis.onvoiceschanged = _loadVoices;
+    _loadVoices();
+  }
+
   function speak(text) {
     if (!state.ttsOn || !window.speechSynthesis) return;
     try {
       window.speechSynthesis.cancel();
+      // Chrome sometimes leaves the synth paused after .cancel(); resume defensively
+      try { if (speechSynthesis.paused) speechSynthesis.resume(); } catch(e){}
       const u = new SpeechSynthesisUtterance(text);
-      u.rate = 1.05;
+      u.lang = 'en-US';
+      u.rate = 1.0;        // natural pace (was 1.05 — slightly clipped)
+      u.pitch = 1.0;
       u.volume = 1;
-      window.speechSynthesis.speak(u);
+      if (_preferredVoiceEn) u.voice = _preferredVoiceEn;
+      // setTimeout(0) — works around Chrome cancel/speak race that drops the first call
+      setTimeout(() => { try { window.speechSynthesis.speak(u); } catch(e){} }, 0);
     } catch(e){}
   }
 
@@ -1129,7 +1179,9 @@
     const stageLabel = { sudoku: 'Sudoku', minesweeper: 'Minesweeper', nonogram: 'Nonogram', maze: 'Maze' }[state.screen] || '';
     return `
       <header class="topbar" role="banner">
-        ${state.screen !== 'launcher' ? `<button class="back-btn" onclick="goLauncher()" aria-label="Back to main menu" type="button">←</button>` : `<div class="brand">DOT <b>ARCADE</b></div>`}
+        ${state.screen !== 'launcher'
+          ? `<div class="brand-row"><button class="back-btn" onclick="goLauncher()" aria-label="Back to main menu" type="button">←</button><span class="beta-badge" aria-label="Beta version">BETA</span></div>`
+          : `<div class="brand-row"><div class="brand">DOT <b>ARCADE</b></div><span class="beta-badge" aria-label="Beta version">BETA</span></div>`}
         <div class="game-eyebrow" style="${state.screen==='launcher'?'display:none':''}">${stageLabel} ${stageNum}</div>
         <div class="header-btns">
           <button class="icon-btn ${state.ttsOn?'active':''}" id="tts-btn" onclick="toggleTts()" type="button" aria-pressed="${state.ttsOn}" aria-label="Toggle voice announcements">Voice</button>
