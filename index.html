@@ -851,6 +851,7 @@
     ttsOn: true,
     sfxOn: true,
     sudokuBlinkOn: true,
+    mazeBlinkOn: true,
     difficulty: { sudoku: 'easy', minesweeper: 'easy', nonogram: 'easy', maze: 'easy' },
     sudoku: null,
     minesweeper: null,
@@ -1209,6 +1210,7 @@
     state.screen = 'launcher';
     state.dotpadCursor = 0;
     stopSudokuBlink();
+    stopMazeBlink();
     SFX.back();
     render();
   }
@@ -1419,7 +1421,7 @@
     if (name === 'sudoku') { initSudoku(); startSudokuBlink(); } else stopSudokuBlink();
     if (name === 'minesweeper') initMinesweeper();
     if (name === 'nonogram') initNonogram();
-    if (name === 'maze') initMaze();
+    if (name === 'maze') { initMaze(); startMazeBlink(); } else stopMazeBlink();
     SFX.start();
     render();
     speak(name + '. ' + (name === 'sudoku' ? 'Fill the grid with one to nine.' :
@@ -1633,6 +1635,26 @@
       _sudokuBlinkInterval = null;
     }
     state.sudokuBlinkOn = true;
+  }
+
+  // Maze player ball blink — pulses the ball position so a blind user can
+  // locate themselves in real time via tactile feedback alone.
+  let _mazeBlinkInterval = null;
+  function startMazeBlink() {
+    if (_mazeBlinkInterval) return;
+    state.mazeBlinkOn = true;
+    _mazeBlinkInterval = setInterval(() => {
+      if (state.screen !== 'maze' || !state.dotpadConnected) return;
+      state.mazeBlinkOn = !state.mazeBlinkOn;
+      pushToDotpad();
+    }, 450);
+  }
+  function stopMazeBlink() {
+    if (_mazeBlinkInterval) {
+      clearInterval(_mazeBlinkInterval);
+      _mazeBlinkInterval = null;
+    }
+    state.mazeBlinkOn = true;
   }
   window.sudokuInputN = sudokuInputN;
   window.sudokuReadCol = sudokuReadCol;
@@ -2580,33 +2602,60 @@
         }
       }
     } else if (state.screen === 'maze') {
+      // Maze full-pad rendering (v0.22):
+      //  - Fixed 2 × 2 braille cells per maze cell → fills all 10 dot-pad rows
+      //    (5 visible maze rows × 2-cell tall = 10 rows; uses the bottom rows)
+      //  - Walls become 2 braille cells thick on every side (solid 0xFF block)
+      //  - Goal: hollow square (corners + center cross) — distinct from wall + ball
+      //  - Player: large round ball with hollow corners; BLINKS (full ↔ blank)
+      //    so a blind user can locate position in real time via the pulsing dots
       const s = state.maze;
-      const L = dpLayout(s.N, true);
-      // For N <= 10: fit whole maze. For N > 10: vertical viewport centered on player
-      const viewportY = (s.N > DP_H / L.cellH);
-      const startR = viewportY
-        ? Math.max(0, Math.min(s.N - Math.floor(DP_H / L.cellH), s.player.r - Math.floor(DP_H / L.cellH / 2)))
-        : 0;
-      const rowsShown = Math.min(s.N, Math.floor(DP_H / L.cellH));
-      for (let dy=0; dy<rowsShown; dy++) {
+      const cellW = 2, cellH = 2;
+      const rowsShown = Math.floor(DP_H / cellH);          // 5
+      const colsShown = Math.floor(DP_W / cellW);          // 15
+      // Player-centered vertical viewport when maze taller than 5
+      const startR = (s.N <= rowsShown)
+        ? 0
+        : Math.max(0, Math.min(s.N - rowsShown, s.player.r - Math.floor(rowsShown / 2)));
+      // Horizontal: center if narrower than 15, else 0 (15×15 fits exactly)
+      const totalW = cellW * Math.min(s.N, colsShown);
+      const offsetX = Math.max(0, Math.floor((DP_W - totalW) / 2));
+      const offsetY = (s.N <= rowsShown) ? Math.floor((DP_H - cellH * s.N) / 2) : 0;
+      // Round ball pattern (2×2 braille cells = 4×8 dot grid with corners off)
+      //   . # #  .       cell(0,0): dot 1 off    → 0xFE
+      //   # # #  #       cell(1,0): dot 4 off    → 0xF7
+      //   ... (full)
+      //   # # #  #       cell(0,1): dot 7 off    → 0xBF
+      //   . # #  .       cell(1,1): dot 8 off    → 0x7F
+      const BALL = [[0xFE, 0xF7], [0xBF, 0x7F]];
+      // Goal pattern — hollow square (top/bottom borders + side bars) so it
+      // feels like a "frame" instead of a solid block
+      //   # # # #   cell(0,0): dot 1+2+3+4 (top + left)        → 0x0F
+      //   # . . #   cell(1,0): dot 1+2+3+8 (top + right side)
+      // Simpler: top row dot1+4 borders; left/right col borders only.
+      const GOAL = [
+        [0x47, 0xB8],   // top: left col dots 1+2+3+7, right col dots 4+5+6+8
+        [0x47, 0xB8],   // bottom: same — gives a vertical-bars frame
+      ];
+      for (let dy = 0; dy < rowsShown; dy++) {
         const r = startR + dy;
         if (r >= s.N) break;
-        for (let c=0; c<s.N; c++) {
-          if (c * L.cellW >= DP_W) break;
-          const col = (viewportY ? Math.max(0, Math.floor((DP_W - L.cellW * s.N) / 2)) : L.offsetX) + c * L.cellW;
-          const row = dy * L.cellH;
+        const row = offsetY + dy * cellH;
+        for (let c = 0; c < Math.min(s.N, colsShown); c++) {
+          const col = offsetX + c * cellW;
           if (s.grid[r][c] === 1) {
-            // 벽 = solid block
-            dpSetBlock(cells, col, row, L.cellW, L.cellH, 0xFF);
+            // Wall — solid 2×2 block (8 dots per cell × 4 cells = 32 dots up)
+            dpSetBlock(cells, col, row, cellW, cellH, 0xFF);
           }
           if (s.goal.r === r && s.goal.c === c) {
-            // 골 = X 패턴 (대각선)
-            dpSetBlock(cells, col, row, L.cellW, L.cellH, 0x12);
+            dpSetBlock(cells, col, row, cellW, cellH, GOAL);
           }
           if (s.player.r === r && s.player.c === c) {
-            // 플레이어 = distinct pattern (dots 2+3+5+6 = 0x36 = middle/bottom blob)
-            // 벽(0xFF, 8 dots all)과 골(0x12, 2 dots middle row)과 명확히 구분
-            dpSetBlock(cells, col, row, L.cellW, L.cellH, 0x36);
+            // Blink: full ball when On, blank when Off — pulse at the player position
+            if (state.mazeBlinkOn) {
+              dpSetBlock(cells, col, row, cellW, cellH, BALL);
+            }
+            // else: empty (player position "disappears" briefly each blink cycle)
           }
         }
       }
