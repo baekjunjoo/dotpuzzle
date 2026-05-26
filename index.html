@@ -2621,13 +2621,18 @@
       const totalW = cellW * Math.min(s.N, colsShown);
       const offsetX = Math.max(0, Math.floor((DP_W - totalW) / 2));
       const offsetY = (s.N <= rowsShown) ? Math.floor((DP_H - cellH * s.N) / 2) : 0;
-      // Round ball pattern (2×2 braille cells = 4×8 dot grid with corners off)
-      //   . # #  .       cell(0,0): dot 1 off    → 0xFE
-      //   # # #  #       cell(1,0): dot 4 off    → 0xF7
-      //   ... (full)
-      //   # # #  #       cell(0,1): dot 7 off    → 0xBF
-      //   . # #  .       cell(1,1): dot 8 off    → 0x7F
-      const BALL = [[0xFE, 0xF7], [0xBF, 0x7F]];
+      // Ball pattern (2×2 braille cells = 4×8 dot grid)
+      // Leaves one dot-column empty on each side so the open corridor the ball
+      // is passing through stays felt as empty space adjacent to the ball.
+      //   . # # .         middle 2 columns filled top→bottom, outer cols empty
+      //   . # # .         cell(0,0): col 1 dots 4+5+6+8 = bits 3,4,5,7 = 0xB8
+      //   . # # .         cell(1,0): col 0 dots 1+2+3+7 = bits 0,1,2,6 = 0x47
+      //   . # # .         cell(0,1): same as (0,0) = 0xB8
+      //   . # # .         cell(1,1): same as (1,0) = 0x47
+      //   . # # .
+      //   . # # .
+      //   . # # .
+      const BALL = [[0xB8, 0x47], [0xB8, 0x47]];
       // Goal pattern — hollow square (top/bottom borders + side bars) so it
       // feels like a "frame" instead of a solid block
       //   # # # #   cell(0,0): dot 1+2+3+4 (top + left)        → 0x0F
