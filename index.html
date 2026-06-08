@@ -1138,6 +1138,8 @@
     win:        () => _seq([[523, 0.15], [659, 0.15], [784, 0.18], [1047, 0.3]]),
     lose:       () => _glide(330, 110, 0.5, 'sawtooth', 0.2),
     toggle:     () => _tone(880, 0.05, 'square', 0.08),
+    // Tier 1 standard: no-op / invalid input feedback
+    error:      () => _seq([[330, 0.06], [220, 0.10]]),
     // Sudoku
     digitInput: (n) => _tone(440 + n * 30, 0.1, 'triangle', 0.12),
     given:      () => _tone(220, 0.08, 'sawtooth', 0.1),  // can't change given
@@ -1808,7 +1810,7 @@
         <button class="tool-btn" onclick="announceContextHelp()"><span class="ico">?</span>Help</button>
       </div>
       <div class="ms-grid" id="ms-grid" role="grid" tabindex="0" aria-label="Minesweeper ${s.N} by ${s.N} grid. Arrow keys to navigate, Space to reveal, F to flag." aria-rowcount="${s.N}" aria-colcount="${s.N}" style="grid-template-columns: repeat(${s.N}, 1fr)">${cellsHtml}</div>
-      <div class="key-hints"><b>Tap</b> reveal · <b>right-click</b> flag · Dot Pad: <b>F3</b> reveal · <b>F4</b> flag</div>
+      <div class="key-hints"><b>Tap</b> reveal · <b>right-click</b> flag · Dot Pad: <b>F1/F2</b> row · <b>Pan ◀▶</b> col · <b>F3</b> reveal · <b>F4</b> flag · <b>Pan ⊙</b> board summary</div>
       ${renderDotpadPreview()}
     `;
   }
@@ -1840,14 +1842,21 @@
     const s = state.minesweeper;
     if (s.gameOver) return;
     s.cursor.r = r; s.cursor.c = c;
-    if (s.flagged[r][c]) { render(); return; }
-    // 첫 클릭이면 mine 배치를 안전하게
+    // No-op error: clicking on a flagged cell or already-revealed cell
+    if (s.flagged[r][c]) {
+      SFX.error(); speak('Flagged. Unflag first.');
+      render(); return;
+    }
+    if (s.revealed[r][c]) {
+      SFX.error(); speak('Already revealed.');
+      render(); return;
+    }
+    // First click safety: place mines avoiding this cell + neighbors
     if (s.firstClick) {
       msPlaceMines(r, c);
       s.firstClick = false;
     }
     if (s.grid[r][c] === -1) {
-      // Reveal all mines
       for (let r2=0; r2<s.N; r2++) for (let c2=0; c2<s.N; c2++)
         if (s.grid[r2][c2] === -1) s.revealed[r2][c2] = true;
       s.gameOver = true; s.won = false;
@@ -1855,26 +1864,38 @@
       toast('☠ Boom!', 2000); speak('Mine. Game over.');
       render(); return;
     }
-    msFlood(r, c);
+    // Track how many cells opened by the flood for voice summary (Tier 1)
+    const openedCells = [];
+    msFlood(r, c, openedCells);
     if (s.grid[r][c] === 0) SFX.reveal(); else SFX.revealN(s.grid[r][c]);
     msCheckWin();
     render();
-    speak('Row ' + (r+1) + ' col ' + (c+1) + ': ' + (s.grid[r][c] === 0 ? 'safe' : s.grid[r][c] + ' nearby'));
+    // Tier 1: announce flood scope when 0-cell chain reveals multiple cells
+    if (s.grid[r][c] === 0 && openedCells.length > 1) {
+      speak('Row ' + (r+1) + ' col ' + (c+1) + ' safe. Chain opened ' + openedCells.length + ' cells.');
+    } else {
+      speak('Row ' + (r+1) + ' col ' + (c+1) + ': ' + (s.grid[r][c] === 0 ? 'safe' : s.grid[r][c] + ' nearby'));
+    }
   }
-  function msFlood(r, c) {
+  function msFlood(r, c, opened) {
     const s = state.minesweeper;
     if (r<0||r>=s.N||c<0||c>=s.N) return;
     if (s.revealed[r][c] || s.flagged[r][c]) return;
     if (s.grid[r][c] === -1) return;
     s.revealed[r][c] = true;
+    if (opened) opened.push([r, c]);
     if (s.grid[r][c] === 0) {
       for (let dr=-1; dr<=1; dr++) for (let dc=-1; dc<=1; dc++)
-        if (dr || dc) msFlood(r+dr, c+dc);
+        if (dr || dc) msFlood(r+dr, c+dc, opened);
     }
   }
   function msFlag(r, c) {
     const s = state.minesweeper;
-    if (s.gameOver || s.revealed[r][c]) return;
+    if (s.gameOver) { SFX.error(); return; }
+    if (s.revealed[r][c]) {
+      SFX.error(); speak('Cannot flag a revealed cell.');
+      return;
+    }
     s.flagged[r][c] = !s.flagged[r][c];
     s.cursor.r = r; s.cursor.c = c;
     if (s.flagged[r][c]) SFX.flag(); else SFX.unflag();
@@ -2706,7 +2727,7 @@
     }
     if (state.screen === 'minesweeper') {
       const s = state.minesweeper;
-      return `Minesweeper ${s.N} by ${s.N} with ${s.MINES} mines, difficulty ${DIFF_LABEL[state.difficulty.minesweeper]}. F1 row up, F2 row down, pan left and right for columns. F3 reveals current cell. F4 flags or unflags. First click is always safe. On screen use Safe hint and Read around for help. F1 plus F4 home. F3 plus F4 help.`;
+      return `Minesweeper ${s.N} by ${s.N} with ${s.MINES} mines, difficulty ${DIFF_LABEL[state.difficulty.minesweeper]}. F1 row up, F2 row down, pan left and right for columns. F3 reveals current cell. F4 flags or unflags. Pan center reads board summary. First click is always safe. Invalid taps produce an error sound. Chain opens of safe areas are voiced with cell count. On screen use Safe hint and Read around for help. F1 plus F4 home. F3 plus F4 help.`;
     }
     if (state.screen === 'nonogram') {
       const s = state.nonogram;
@@ -2819,6 +2840,15 @@
       else if (keyCode === KC.PanningRight) s.cursor.c = (s.cursor.c + 1) % s.N;
       else if (keyCode === KC.KeyFunction3) { msClick(s.cursor.r, s.cursor.c); return; }
       else if (keyCode === KC.KeyFunction4) { msFlag(s.cursor.r, s.cursor.c); return; }
+      else if (keyCode === KC.PanningAll) {
+        // Tier 1 standard: board summary (mines remaining, flags placed, % revealed)
+        const flagsLeft = s.MINES - s.flagged.flat().filter(Boolean).length;
+        const total = s.N * s.N;
+        const revealed = s.revealed.flat().filter(Boolean).length;
+        const pct = Math.round(revealed / (total - s.MINES) * 100);
+        speak('Board: ' + s.MINES + ' mines, ' + flagsLeft + ' flags left, ' + pct + ' percent revealed.');
+        return;
+      }
       render();
       const v = s.grid[s.cursor.r][s.cursor.c];
       const status = s.revealed[s.cursor.r][s.cursor.c] ? (v === -1 ? 'mine' : v > 0 ? v + ' nearby' : 'empty') :
